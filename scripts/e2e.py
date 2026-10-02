@@ -53,6 +53,9 @@ def main() -> int:
     origin = f"http://127.0.0.1:{web_port}"
     environment.update(
         LAB_MODE="demo",
+        # The demo's simulated seconds are shorter in browser verification;
+        # normal startup transitions must not consume the assertion deadline.
+        LAB_DEMO_DELAY="0.2",
         LAB_ORIGIN=origin,
         LAB_API_URL=f"http://127.0.0.1:{api_port}",
         LAB_E2E_URL=origin,

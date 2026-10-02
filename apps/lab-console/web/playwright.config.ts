@@ -2,6 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests",
   timeout: 45000,
+  // Allow a fallback state poll (3s) while checking asynchronous transitions.
+  expect: { timeout: 10000 },
   fullyParallel: false,
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
