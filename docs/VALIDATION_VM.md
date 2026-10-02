@@ -91,8 +91,63 @@ sem publicar os valores retornados. Para repetir, siga as etapas 7 e 8 de
 `SETUP.md` com seus próprios perfis locais.
 
 O bootstrap não provisiona schemas, contas ou privilégios. DDL, DML, cargas
-deliberadas e e-mail real não foram executados; os testes correspondentes usam
-fixtures e entrega simulada, respeitando `AGENTS.md`.
+deliberadas e e-mail real não foram executados na validação inicial. O teste
+operacional autorizado posteriormente está descrito abaixo.
+
+## Teste integrado pelo navegador: SELECTs, Refactor e e-mail
+
+Executado em **2 de outubro de 2026**, após autorização explícita do operador
+para ativar Health Check, Audit e Refactor e iniciar a simulação de SELECTs.
+A Web e a API integradas ficaram em loopback na VM, acessadas pelo navegador
+por SSH. O endereço público continua servindo o modo demonstração.
+
+1. O navegador confirmou **INTEGRADO** e **Runner conectado**. Health Check,
+   Audit e Refactor foram ativados, cada um com a confirmação `sakila`.
+2. `Iniciar consultas` executou o aquecimento de um minuto e os dois componentes
+   oficiais: carga de latência e query versionada para o Slow Query Log.
+3. Codex decidiu o alerta P99; o MCP validou o contrato, registrou a evidência
+   no DBA e Notification enviou e-mail real. O recebimento na caixa Oracle
+   configurada foi confirmado às **10:24:21**, horário de São Paulo.
+4. A query conhecida `correlated_running_total` registrou **424 segundos** e
+   originou uma única solicitação deduplicada para o Refactor. O worker ativo
+   recebeu o pedido pelo MCP e usou o provedor configurado.
+5. No laboratório `sakila_dev`, original e proposta retornaram **16.044 linhas**
+   com equivalência confirmada. Tempos da execução serial: **91,375041 s** e
+   **0,164595 s**. O resultado `approved_lab` foi registrado no DBA pelo MCP;
+   o e-mail de conclusão foi recebido na caixa Oracle às **10:27:35**.
+6. A interface confirmou o cancelamento dos SELECTs. Uma consulta read-only
+   posterior confirmou **zero consultas ativas em `sakila`**. Os monitores e o
+   worker foram encerrados após o teste.
+
+O ganho medido é restrito à execução controlada em `sakila_dev`; não demonstra
+ganho em produção. Audit foi ativado e coletou evidências, mas este teste não
+executou DROP/ALTER nem gerou alertas Audit artificiais. A carga foi cancelada
+após comprovar o fluxo e não constitui benchmark final de TPS.
+
+SMTP aceitou os envios para os dois destinatários já configurados; o recebimento
+foi verificado diretamente na caixa Oracle conectada. Também passou uma entrega
+manual com fixture fictícia. A senha foi resolvida exclusivamente pelo runtime
+Notification no gerenciador de segredos existente, através de um helper
+temporário e transporte SSH; nenhum segredo foi gravado no clone. Para operação
+Linux independente deste computador, configure um helper permanente do seu
+gerenciador de segredos conforme a etapa 10 de `SETUP.md`.
+
+Correções encontradas nesta execução:
+
+- O runner preserva a opção explícita `AGENT_MONITORING_NOTIFY` para os
+  executores oficiais, mantendo senhas SMTP e chave do runner fora dos filhos.
+- Health Check, Audit e Refactor repassam somente a referência não secreta de
+  `NOTIFICATION_SMTP_CREDENTIAL_HELPER` ao MCP.
+- Health Check publica os resultados detalhados do roteamento para que a
+  timeline mostre alerta, MCP, e-mail, registro DBA e cooldown.
+- A biblioteca inclui `result.json` dentro dos jobs Refactor, com IDs reais de
+  resultado/solicitação, timestamp de conclusão e retenção histórica. O JSON
+  preserva os controles de hash, caminhos, symlinks e filtragem de segredos.
+
+Relatórios operacionais, SQLs do Refactor, inboxes, capturas de tela e a
+configuração SMTP local permanecem ignorados pelo Git. O passo a passo de
+instalação continua em `SETUP.md`; SMTP e workloads reais exigem autorização
+operacional separada da instalação.
 
 ## Claude Code e Kimi Code
 

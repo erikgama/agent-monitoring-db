@@ -334,6 +334,7 @@ def _publication_fields(publication: dict[str, Any]) -> dict[str, Any]:
         "delivery_status": first.get("delivery_status"),
         "email_delivered": delivery.get("delivered"),
         "dba_status": first.get("dba_status"),
+        "publication_outcomes": outcomes,
     }
 
 

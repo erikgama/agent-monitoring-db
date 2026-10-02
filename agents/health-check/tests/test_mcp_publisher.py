@@ -27,6 +27,7 @@ class McpPublisherEnvironmentTests(unittest.TestCase):
             "SMTP_USERNAME": "sender@example.invalid",
             "SMTP_PASSWORD": "test-secret",
             "SMTP_USE_STARTTLS": "true",
+            "NOTIFICATION_SMTP_CREDENTIAL_HELPER": "/tmp/example-secret-helper",
             "UV_CACHE_DIR": "/tmp/mysqlconf-mcp-uv-cache",
             "DATABASE_PASSWORD": "must-not-cross-boundary",
         }
@@ -41,6 +42,10 @@ class McpPublisherEnvironmentTests(unittest.TestCase):
         self.assertEqual(parameters.env["MCP_DBA_ALERTS_DIR"], "/tmp/dba-alert-test")
         self.assertEqual(parameters.env["NOTIFICATION_DELIVERY_ENABLED"], "true")
         self.assertEqual(parameters.env["SMTP_PASSWORD"], "test-secret")
+        self.assertEqual(
+            parameters.env["NOTIFICATION_SMTP_CREDENTIAL_HELPER"],
+            "/tmp/example-secret-helper",
+        )
         self.assertEqual(parameters.env["UV_CACHE_DIR"], "/tmp/mysqlconf-mcp-uv-cache")
         self.assertNotIn("DATABASE_PASSWORD", parameters.env)
 

@@ -44,6 +44,7 @@ class McpRefactorResultPublisher:
             "NOTIFICATION_EMAIL_RECIPIENTS_WARNING",
             "NOTIFICATION_EMAIL_RECIPIENTS_REFACTOR",
             "NOTIFICATION_SMTP_KEYCHAIN_SERVICE",
+            "NOTIFICATION_SMTP_CREDENTIAL_HELPER",
             "SMTP_HOST",
             "SMTP_PORT",
             "SMTP_USERNAME",

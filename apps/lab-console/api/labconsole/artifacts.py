@@ -23,6 +23,7 @@ FILES = {
     "alert.json",
     "alert-summary.json",
     "audit-event-summary.json",
+    "result.json",
 }
 PRIVATE = re.compile(
     r'(?i)(?:-----BEGIN .*PRIVATE KEY|smtp_password|"(?:password|token|secret|recipients)"\s*:|\b\d{1,3}(?:\.\d{1,3}){3}\b|[\w.+-]+@[\w.-]+\.[a-z]{2,})'
@@ -111,11 +112,15 @@ class Catalog:
                 continue
             paths = (
                 list(root.glob("*/*.json"))
-                if "inbox" in label
+                if "inbox" in label or label == "refactor"
                 else list(root.glob("*.json"))
             )
             for path in sorted(paths, reverse=True)[:200]:
                 if path.name not in FILES:
+                    continue
+                if label == "refactor" and path.name != "result.json":
+                    continue
+                if label != "refactor" and path.name == "result.json":
                     continue
                 try:
                     raw = safe_read(self.repository, path)
@@ -123,12 +128,23 @@ class Catalog:
                     data = json.loads(content)
                     if _contains_private(content, data):
                         continue
+                    if (
+                        label == "refactor"
+                        and data.get("contract_version") != "query_refactor_result.v1"
+                    ):
+                        continue
                     audit_id = data.get("audit_id", data.get("source_audit_id"))
+                    result_id = data.get("result_id") if label == "refactor" else None
                     stamp = data.get(
                         "collected_at",
-                        data.get("detected_at", data.get("generated_at")),
+                        data.get(
+                            "detected_at",
+                            data.get("generated_at", data.get("completed_at")),
+                        ),
                     )
-                    if not audit_id:
+                    if not audit_id and not (
+                        result_id and data.get("request_id") and stamp
+                    ):
                         continue
                     pair = (
                         path.with_suffix(".html")
@@ -162,19 +178,29 @@ class Catalog:
                             if label == "refactor"
                             else "audit",
                             "location": label,
-                            "name": f"{label} · {path.name}",
+                            "name": f"{label} · {data.get('query_id')} · {path.name}"
+                            if label == "refactor"
+                            else f"{label} · {path.name}",
                             "audit_id": audit_id,
+                            "result_id": result_id,
+                            "request_id": data.get("request_id")
+                            if label == "refactor"
+                            else None,
                             "alert_id": data.get("alert_id"),
                             "category": data.get(
                                 "category",
-                                "query_latency" if label == "latency" else "report",
+                                "query_latency"
+                                if label == "latency"
+                                else "query_refactor"
+                                if label == "refactor"
+                                else "report",
                             ),
                             "severity": data.get(
                                 "severity", data.get("overall_status", "info")
                             ),
                             "timestamp": stamp,
                             "retention": "historical"
-                            if "inbox" in label
+                            if "inbox" in label or label == "refactor"
                             else "latest-only",
                             "html_available": bool(html_ok),
                             "sha256": sha,

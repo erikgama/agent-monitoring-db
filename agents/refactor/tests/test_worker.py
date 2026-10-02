@@ -35,6 +35,23 @@ JOIN running_payment r
 WHERE DATE_FORMAT(p.payment_date, '%Y-%m') >= '2005-01';"""
 
 
+class PublisherEnvironmentTests(unittest.TestCase):
+    def test_result_passes_helper_reference_without_smtp_secret(self) -> None:
+        with patch.dict("os.environ", {}, clear=True):
+            parameters = worker.McpRefactorResultPublisher(
+                root=REFACTOR_ROOT.parents[1],
+                server_environment={
+                    "NOTIFICATION_SMTP_CREDENTIAL_HELPER": "/tmp/example-secret-helper",
+                    "SMTP_PASSWORD": "must-not-cross-boundary",
+                },
+            )._parameters()
+        self.assertEqual(
+            parameters.env["NOTIFICATION_SMTP_CREDENTIAL_HELPER"],
+            "/tmp/example-secret-helper",
+        )
+        self.assertNotIn("SMTP_PASSWORD", parameters.env)
+
+
 class FakeExecutor:
     def __init__(self) -> None:
         self.calls = 0

@@ -142,6 +142,7 @@ def child_environment(repository: Path, runtime: Path) -> dict[str, str]:
         "TMPDIR",
         "AGENT_MONITORING_CONFIG",
         "AGENT_MONITORING_LLM_PROVIDER",
+        "AGENT_MONITORING_NOTIFY",
     }
     env = {k: v for k, v in os.environ.items() if k in keys}
     env.update(

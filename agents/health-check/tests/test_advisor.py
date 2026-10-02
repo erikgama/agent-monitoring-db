@@ -287,6 +287,10 @@ class HealthCheckLunaAgentTests(unittest.TestCase):
             value["audit_id"],
         )
         self.assertEqual(events[0]["published_count"], 1)
+        outcomes = events[0]["publication_outcomes"]
+        self.assertEqual(outcomes[0]["alert_id"], alert["alert_id"])
+        self.assertTrue(outcomes[0]["accepted"])
+        self.assertEqual(outcomes[0]["delivery_status"], "dry_run")
 
     def test_alert_decision_is_persisted_when_publication_is_disabled(self) -> None:
         analyzer = FakeAnalyzer(decision("alert", observed=2.1))

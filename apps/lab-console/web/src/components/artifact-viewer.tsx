@@ -216,7 +216,15 @@ export function ArtifactViewer({
               <div className="document-meta">
                 <span className="badge">{artifact.retention}</span>
                 <span>{artifact.category}</span>
-                <code>{artifact.audit_id.slice(0, 18)}…</code>
+                <code>
+                  {(
+                    artifact.result_id ||
+                    artifact.audit_id ||
+                    artifact.request_id ||
+                    "—"
+                  ).slice(0, 18)}
+                  …
+                </code>
               </div>
               {tab === "meta" ? (
                 <pre className="json-document">

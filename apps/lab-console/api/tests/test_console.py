@@ -702,6 +702,30 @@ def test_sanitization_and_parsing():
     assert all(e[2]["category"] == "destructive_ddl" for e in destructive)
     assert all(e[2]["audit_id"] == "audit-456" for e in destructive)
 
+    health = parse_line(
+        json.dumps(
+            {
+                "publication_outcomes": [
+                    {
+                        "alert_id": "health-alert",
+                        "category": "query_latency",
+                        "accepted": True,
+                        "delivery_status": "sent",
+                        "dba_status": "recorded",
+                    }
+                ]
+            }
+        ),
+        "health-check",
+    )
+    assert [e[1] for e in health] == [
+        "alert.detected",
+        "mcp.validated",
+        "notification.sent",
+        "dba.recorded",
+    ]
+    assert all(e[3] == "health-alert" for e in health)
+
 
 def make_artifact(tmp_path):
     root = tmp_path / "agents/health-check/general_report/results"
@@ -753,6 +777,39 @@ def test_artifact_accepts_mysql_user_at_host_but_blocks_email(tmp_path):
     assert Catalog(tmp_path).list() == []
 
 
+def test_refactor_result_is_cataloged_from_its_job_directory(tmp_path):
+    root = tmp_path / "agents/refactor/query_refactor/advisor/results/job"
+    root.mkdir(parents=True)
+    result = {
+        "contract_version": "query_refactor_result.v1",
+        "result_id": "11111111-1111-4111-8111-111111111111",
+        "request_id": "22222222-2222-4222-8222-222222222222",
+        "query_id": "correlated_running_total",
+        "completed_at": "2026-10-02T13:27:24Z",
+        "status": "approved_lab",
+        "validation": {"equivalent": True},
+    }
+    content = json.dumps(result)
+    (root / "result.json").write_text(content)
+    (root / "request.json").write_text(content)
+    catalog = Catalog(tmp_path)
+    item = catalog.list()[0]
+    assert len(catalog.list()) == 1
+    assert item["source"] == "refactor"
+    assert item["audit_id"] is None
+    assert item["result_id"] == result["result_id"]
+    assert item["request_id"] == result["request_id"]
+    assert item["timestamp"] == result["completed_at"]
+    assert item["retention"] == "historical"
+    assert item["html_available"] is False
+    assert catalog.read(item["id"], "json", item["sha256"]) == content
+    with pytest.raises(ValueError, match="html_not_retained"):
+        catalog.read(item["id"], "html", item["sha256"])
+    result["password"] = "must-not-be-visible"
+    (root / "result.json").write_text(json.dumps(result))
+    assert catalog.list() == []
+
+
 def test_artifact_symlink_sensitive_mime_size(tmp_path):
     root = make_artifact(tmp_path)
     outside = tmp_path / "outside.json"
@@ -783,6 +840,7 @@ def test_audit_summary_has_no_fabricated_html(tmp_path):
 def test_commands_and_environment(tmp_path, monkeypatch):
     monkeypatch.setenv("SMTP_PASSWORD", "never-forward")
     monkeypatch.setenv("LAB_RUNNER_KEY", "never-forward")
+    monkeypatch.setenv("AGENT_MONITORING_NOTIFY", "true")
     for action in (
         "health.lab",
         "audit.lab",
@@ -810,6 +868,7 @@ def test_commands_and_environment(tmp_path, monkeypatch):
     env = child_environment(tmp_path, tmp_path)
     assert "SMTP_PASSWORD" not in env and "LAB_RUNNER_KEY" not in env
     assert env["NOTIFICATION_DELIVERY_ENABLED"] == "false"
+    assert env["AGENT_MONITORING_NOTIFY"] == "true"
     assert str(tmp_path) in env["UV_CACHE_DIR"]
 
 

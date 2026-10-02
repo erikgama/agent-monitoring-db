@@ -28,7 +28,9 @@ export type Artifact = {
   source: string;
   location: string;
   name: string;
-  audit_id: string;
+  audit_id: string | null;
+  request_id?: string | null;
+  result_id?: string | null;
   alert_id?: string;
   category: string;
   severity: string;

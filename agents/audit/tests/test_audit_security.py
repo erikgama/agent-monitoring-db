@@ -187,11 +187,16 @@ class AuditSecurityTests(unittest.TestCase):
             server_environment={
                 "MCP_NOTIFICATION_ENABLED": "true",
                 "SMTP_PASSWORD": "must-not-cross-boundary",
+                "NOTIFICATION_SMTP_CREDENTIAL_HELPER": "/tmp/example-secret-helper",
             },
         )
         with patch.dict("os.environ", {"SMTP_PASSWORD": "secret"}, clear=False):
             parameters = publisher._parameters()
         self.assertNotIn("SMTP_PASSWORD", parameters.env)
+        self.assertEqual(
+            parameters.env["NOTIFICATION_SMTP_CREDENTIAL_HELPER"],
+            "/tmp/example-secret-helper",
+        )
 
     def test_mcp_child_has_an_isolated_uv_cache_by_default(self) -> None:
         with patch.dict("os.environ", {}, clear=True):
