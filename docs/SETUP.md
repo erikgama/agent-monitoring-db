@@ -32,6 +32,12 @@ instale os mesmos pré-requisitos com o gerenciador do sistema.
 
 ## 2. Clonar e instalar módulos
 
+O repositório é privado. Antes do clone, conceda à identidade usada nesta
+máquina acesso de leitura no GitHub e configure a autenticação HTTPS no Git
+conforme o método aprovado pela organização. Sem essa etapa, o clone falha
+mesmo que os pré-requisitos locais estejam corretos. Não coloque tokens na URL
+nem copie chaves ou sessões de login de outra máquina.
+
 ```sh
 git clone https://github.com/erikgama/agent-monitoring-db.git
 cd agent-monitoring-db
