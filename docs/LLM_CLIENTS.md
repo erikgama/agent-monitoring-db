@@ -34,7 +34,17 @@ clientes. Arquivos existentes são preservados; mescle a entrada manualmente
 se já houver configuração local. Depois de mover o clone, regenere ou atualize
 os caminhos locais. Nenhuma entrada contém credenciais de banco.
 
-Codex: confira `codex mcp list` e `/mcp`. Claude: `claude mcp list` e `/mcp`.
+Codex: confirme a confiança do projeto e confira `/mcp` na sessão iniciada na
+raiz. `codex mcp list` lista o registro do usuário, não comprova sozinho o
+carregamento do arquivo local do projeto. Se preferir registrar este clone no
+cliente do usuário, use:
+
+```sh
+codex mcp add agent_monitoring -- uv run --locked --directory "$PWD/mcp" agent-monitoring-mcp
+codex mcp list
+```
+
+Claude: `claude mcp list` e `/mcp`.
 Kimi Code: abra `/mcp` na sessão. Reinicie o cliente após gerar os arquivos e
 confirme a confiança do projeto/MCP quando solicitada. Configuração de um MCP
 nunca é autorização para DDL, DML, e-mail ou infraestrutura.

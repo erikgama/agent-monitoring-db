@@ -165,8 +165,14 @@ class ProcessTree:
     """Track descendants by PID plus creation time, including child sessions."""
 
     def __init__(self, pid: int):
-        self.root = psutil.Process(pid)
-        self.known: dict[int, psutil.Process] = {pid: self.root}
+        # A very short child may already have been reaped by asyncio on Linux.
+        try:
+            self.root: psutil.Process | None = psutil.Process(pid)
+        except psutil.NoSuchProcess:
+            self.root = None
+        self.known: dict[int, psutil.Process] = (
+            {pid: self.root} if self.root is not None else {}
+        )
         self.capture_restricted = False
         self.process_group: int | None = None
         with contextlib.suppress(ProcessLookupError, PermissionError):

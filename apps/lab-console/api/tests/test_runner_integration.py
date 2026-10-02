@@ -8,6 +8,7 @@ import sys
 import time
 
 import httpx
+import psutil
 import pytest
 import uvicorn
 
@@ -296,6 +297,38 @@ async def test_runner_failure_timeout_cleanup(
         }
     )
     assert messages[-1]["status"] == expected
+
+
+@pytest.mark.asyncio
+async def test_runner_accepts_a_successful_child_already_reaped_by_asyncio(
+    tmp_path, monkeypatch
+):
+    messages = []
+
+    async def send(message):
+        messages.append(message)
+
+    def already_gone(pid):
+        raise psutil.NoSuchProcess(pid)
+
+    monkeypatch.setattr("labconsole.runner.psutil.Process", already_gone)
+    monkeypatch.setattr(
+        "labconsole.runner.command_for",
+        lambda *_: (
+            [sys.executable, "-c", "pass"],
+            tmp_path,
+        ),
+    )
+    runner = Runner(tmp_path, tmp_path / "runtime", send, True)
+    await runner.run(
+        {
+            "id": "fast-child",
+            "action": "audit.drop",
+            "execute": True,
+            "mode": "integrated",
+        }
+    )
+    assert messages[-1]["status"] == "succeeded"
 
 
 @pytest.mark.asyncio
