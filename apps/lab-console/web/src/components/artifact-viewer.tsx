@@ -35,6 +35,7 @@ export function ArtifactViewer({
     queryKey: ["artifacts"],
     queryFn: () => api<Artifact[]>("/artifacts"),
     initialData: initial,
+    refetchInterval: 3000,
   });
   const [filter, setFilter] = useState(source || "all");
   const [search, setSearch] = useState("");

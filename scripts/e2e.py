@@ -56,6 +56,7 @@ def main() -> int:
         LAB_API_URL=f"http://127.0.0.1:{api_port}",
         LAB_E2E_URL=origin,
         LAB_NEXT_DIST_DIR=build_directory,
+        PORT=str(web_port),
         NEXT_TELEMETRY_DISABLED="1",
     )
     processes: list[subprocess.Popen] = []
@@ -64,6 +65,19 @@ def main() -> int:
         environment["LAB_RUNTIME"] = str(temporary / "runtime")
         with (temporary / "demo.log").open("w") as log:
             try:
+                # Compile the production bundle for this isolated API/port;
+                # development compilation can delay SSE/UI updates in CI.
+                build = subprocess.run(
+                    ["npm", "run", "build"],
+                    cwd=WEB,
+                    env=environment,
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    timeout=180,
+                    check=False,
+                )
+                if build.returncode:
+                    raise RuntimeError("demo_build_failed")
                 commands = [
                     (
                         [
@@ -80,7 +94,7 @@ def main() -> int:
                         ],
                         ROOT / "apps/lab-console/api",
                     ),
-                    (["npm", "run", "dev", "--", "--port", str(web_port)], WEB),
+                    (["npm", "run", "start"], WEB),
                 ]
                 for command, cwd in commands:
                     processes.append(

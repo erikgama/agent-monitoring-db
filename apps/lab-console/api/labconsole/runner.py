@@ -183,7 +183,9 @@ class ProcessTree:
             try:
                 for child in process.children(recursive=True):
                     self.known[child.pid] = child
-            except (psutil.NoSuchProcess, psutil.AccessDenied, PermissionError):
+            except psutil.NoSuchProcess:
+                continue
+            except (psutil.AccessDenied, PermissionError):
                 self.capture_restricted = True
 
     async def capture_async(self, lock: asyncio.Lock | None = None) -> None:

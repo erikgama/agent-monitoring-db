@@ -50,6 +50,9 @@ def main() -> int:
             ("LAB_DATABASE_", "MYSQL_", "SMTP_", "HEALTHCHECK_", "AUDIT_SECURITY_")
         ):
             environment.pop(key, None)
+    # These optional tests exercise the real stdio transport with synthetic
+    # alerts, a temporary DBA inbox and delivery disabled, without SMTP/MySQL.
+    environment["HEALTHCHECK_RUN_MCP_INTEGRATION"] = "1"
     commands = [
         (ROOT, ["uv", "run", "--locked", "ruff", "check", *PYTHON_PATHS]),
         (ROOT, ["uv", "run", "--locked", "ruff", "format", "--check", *PYTHON_PATHS]),
