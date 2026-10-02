@@ -7,7 +7,7 @@ alertas já validados.
 
 O código, as regras, os testes e os scripts do laboratório estão neste
 repositório. A configuração de cada máquina fica em um único arquivo:
-**`config/agent-monitoring.toml`**. Senhas pertencem ao perfil criptografado do
+**`config/agent-monitoring.toml`**. Senhas pertencem ao perfil local do
 cliente MySQL, fora do Git. Coletores, advisors, DBA, Refactor e os executores do
 console usam o mesmo resolvedor de configuração.
 

@@ -73,6 +73,10 @@ sudo dnf install -y atk at-spi2-atk alsa-lib cups-libs libXcomposite \
 Execute `check.py` e `e2e.py` sequencialmente, como acima; a compilação Web
 simultânea pode disputar CPU com os prazos da suíte de integração.
 
+Depois dos testes, execute `git status --short`: em um clone sem alterações
+próprias, a saída deve ficar vazia. O teste de navegador usa configuração
+TypeScript e build temporários; arquivos gerados pelo Next.js são ignorados.
+
 ## 4. Confirmar o console demo
 
 ```sh

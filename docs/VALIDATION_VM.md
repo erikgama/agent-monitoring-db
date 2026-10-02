@@ -1,7 +1,7 @@
 # Validação de instalação e portabilidade
 
 Executada em **2 de outubro de 2026**, a partir de um clone do GitHub.
-Código validado: [`11ac976`](https://github.com/erikgama/agent-monitoring-db/commit/11ac976).
+Código validado: [`53c89c0`](https://github.com/erikgama/agent-monitoring-db/commit/53c89c0).
 O repositório foi publicado como privado; quem clonar precisa de acesso ao GitHub.
 
 ## VM: Oracle Linux 9
@@ -14,7 +14,7 @@ O repositório foi publicado como privado; quem clonar precisa de acesso ao GitH
 | Testes Python | `python3 scripts/check.py` | **316 testes passaram**, sem skips na VM |
 | Estilo e tipos | Mesmo comando | Ruff, formatação Python, mypy e TypeScript passaram |
 | Web | Mesmo comando | Lint e build Next.js de produção passaram |
-| Navegador | `python3 scripts/e2e.py` | **7 cenários Chromium passaram** com runtime e build isolados |
+| Navegador | `python3 scripts/e2e.py` | **7 cenários Chromium passaram** com runtime e build isolados; Git permaneceu limpo |
 | Dependências Web | `npm audit` | Nenhuma vulnerabilidade reportada após atualizar Next.js para 16.3.6 |
 | Codex | `codex login status` e `agent-monitoring llm-check` | Login ChatGPT e chamada estruturada reais confirmados |
 | Advisors | `scripts/check-llm.py --execute` | Health Check, Audit, Slow Query e proposta Refactor passaram |
@@ -35,7 +35,7 @@ Playwright; as bibliotecas necessárias estão em `SETUP.md`.
 ## GitHub Actions
 
 O mesmo bootstrap, `check.py` e os sete cenários de navegador passaram no CI:
-[execução validada](https://github.com/erikgama/agent-monitoring-db/actions/runs/36962682102).
+[execução validada](https://github.com/erikgama/agent-monitoring-db/actions/runs/36964791652).
 O workflow é `.github/workflows/ci.yml` e roda em cada push/PR, sem banco,
 SMTP ou autenticação LLM reais.
 
@@ -46,6 +46,7 @@ Na máquina de origem, usando apenas a referência do perfil já configurado:
 | Verificação | Resultado |
 | --- | --- |
 | `agent-monitoring db-check` | Login, `sakila`, porta e TLS confirmados em transação somente leitura |
+| `agent-monitoring db-check --role refactor` | Perfil Refactor, `sakila_dev`, porta e TLS confirmados em transação somente leitura |
 | Health Check `collect` | Coleta executada; o relatório observou estado `critical` |
 | Audit `collect` | Coleta executada com `collection_status=complete` |
 
