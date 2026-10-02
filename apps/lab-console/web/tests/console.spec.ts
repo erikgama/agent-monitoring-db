@@ -1,7 +1,19 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, baseURL }) => {
+  const origin = baseURL || "http://localhost:3000";
+  const health = await page.request.get("/api/health");
+  expect((await health.json()).mode).toBe("demo");
+  const access = await page.request.post("/api/access", {
+    headers: { Origin: origin },
+  });
+  const { csrf } = await access.json();
+  // A failed lifecycle assertion must not leave agents active in later tests.
+  const stopped = await page.request.post("/api/emergency-stop", {
+    headers: { Origin: origin, "x-csrf-token": csrf },
+  });
+  expect(stopped.ok()).toBeTruthy();
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: "Laboratório de agentes" }),
