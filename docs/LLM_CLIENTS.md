@@ -44,6 +44,13 @@ codex mcp add agent_monitoring -- uv run --locked --directory "$PWD/mcp" agent-m
 codex mcp list
 ```
 
+Em `codex exec` sem interação, uma chamada MCP sujeita à política de aprovação
+pode terminar com `user cancelled MCP tool call`. Para conferir o MCP, abra uma
+sessão interativa, use `/mcp` e aprove a chamada quando solicitada. Em uma
+automação já autorizada, `codex exec --approve-for-me` pode encaminhar a
+aprovação à revisão automática; isso não dispensa as autorizações operacionais
+exigidas pelo projeto. `llm-check` testa o provedor, mas não chama o MCP.
+
 Claude: `claude mcp list` e `/mcp`.
 Kimi Code: abra `/mcp` na sessão. Reinicie o cliente após gerar os arquivos e
 confirme a confiança do projeto/MCP quando solicitada. Configuração de um MCP
