@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "query_refactor_result.v1.schema.json",
+  "title": "Query Refactor Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "result_id", "request_id", "completed_at", "source", "destination", "query_id", "query_fingerprint", "status", "validation_schema", "original_sql", "original_sql_sha256", "proposed_sql", "proposed_sql_sha256", "change_summary", "timings", "validation", "artifacts", "limitations"],
+  "properties": {
+    "contract_version": {"const": "query_refactor_result.v1"},
+    "result_id": {"type": "string", "format": "uuid"},
+    "request_id": {"type": "string", "format": "uuid"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "source": {"const": "refactor"},
+    "destination": {"const": "dba"},
+    "query_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+    "query_fingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "status": {"enum": ["approved_lab", "requires_dba_validation"]},
+    "validation_schema": {"const": "sakila_dev"},
+    "original_sql": {"type": "string", "minLength": 20, "maxLength": 20000},
+    "original_sql_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "proposed_sql": {"type": "string", "minLength": 20, "maxLength": 20000},
+    "proposed_sql_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "change_summary": {"type": "string", "minLength": 10, "maxLength": 1000},
+    "timings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["before_seconds", "after_seconds", "saved_seconds", "improvement_percent", "speedup"],
+      "properties": {
+        "before_seconds": {"type": "number", "minimum": 0},
+        "after_seconds": {"type": "number", "minimum": 0},
+        "saved_seconds": {"type": "number"},
+        "improvement_percent": {"type": "number"},
+        "speedup": {"type": "number", "minimum": 0}
+      }
+    },
+    "validation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["equivalent", "original_exit_code", "proposed_exit_code", "original_rows", "proposed_rows", "original_result_sha256", "proposed_result_sha256"],
+      "properties": {
+        "equivalent": {"type": "boolean"},
+        "original_exit_code": {"type": "integer"},
+        "proposed_exit_code": {"type": "integer"},
+        "original_rows": {"type": "integer", "minimum": 0},
+        "proposed_rows": {"type": "integer", "minimum": 0},
+        "original_result_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+        "proposed_result_sha256": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "artifacts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["original_path", "proposal_path", "report_path"],
+      "properties": {
+        "original_path": {"type": "string", "pattern": "^query_refactor/advisor/results/[a-z0-9_-]+/original\\.sql$"},
+        "proposal_path": {"type": "string", "pattern": "^query_refactor/advisor/results/[a-z0-9_-]+/proposed\\.sql$"},
+        "report_path": {"type": "string", "pattern": "^query_refactor/advisor/results/[a-z0-9_-]+/report\\.md$"}
+      }
+    },
+    "limitations": {"type": "array", "maxItems": 20, "items": {"type": "string", "minLength": 1, "maxLength": 500}}
+  }
+}

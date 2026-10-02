@@ -1,0 +1,15 @@
+.DS_Store
+.coverage
+.coverage.*
+.mypy_cache/
+.pytest_cache/
+runtime/inbox/*
+!runtime/inbox/.gitkeep
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.venv/
+*.egg-info/
+build/
+dist/
+htmlcov/

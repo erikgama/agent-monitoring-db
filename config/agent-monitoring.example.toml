@@ -1,0 +1,36 @@
+# Copy to config/agent-monitoring.toml. This file never contains passwords.
+# Create login profiles interactively with mysql_config_editor (docs/SETUP.md).
+[database]
+login_file = "~/.config/agent-monitoring/mylogin.cnf"
+mysql_binary = "mysql"
+ssl_mode = "REQUIRED"
+# Prefer VERIFY_IDENTITY with the CA of your server when available.
+ssl_ca = ""
+expected_port = 3306
+target_label = "my-mysql-lab"
+monitoring_login_path = "agent-monitoring"
+refactor_login_path = "agent-monitoring-refactor"
+# Only explicitly authorized lab workloads use these separate profiles.
+workload_login_path = "agent-monitoring-workload"
+audit_lab_login_path = "sakila-audit-demo"
+
+[llm]
+provider = "codex" # codex | claude | kimi
+
+[llm.codex]
+# Empty model names use the authenticated client's default model.
+# These defaults preserve the original deployment; select models your account supports.
+analysis_model = "gpt-5.6-luna"
+refactor_model = "gpt-5.6-sol"
+analysis_effort = "low"
+refactor_effort = "medium"
+
+[llm.claude]
+analysis_model = ""
+refactor_model = ""
+analysis_effort = "low"
+refactor_effort = "medium"
+
+[llm.kimi]
+analysis_model = ""
+refactor_model = ""

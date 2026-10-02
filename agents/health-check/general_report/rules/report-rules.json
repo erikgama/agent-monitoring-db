@@ -1,0 +1,54 @@
+{
+  "collection": {
+    "large_table_bytes": 104857600
+  },
+  "data_retention": {
+    "mode": "latest_only",
+    "raw_query_text_persisted": false,
+    "raw_logs_persisted": false
+  },
+  "report_limits": {
+    "connections_limit": 10,
+    "workload_limit": 10,
+    "sessions_limit": 10,
+    "locks_limit": 20,
+    "tables_limit": 10,
+    "indexes_limit": 10,
+    "errors_limit": 20
+  },
+  "assessment_thresholds": {
+    "connections": {
+      "attention_usage_pct": 70,
+      "critical_usage_pct": 85,
+      "attention_aborted_connect_pct": 5
+    },
+    "active_sessions": {
+      "attention_long_running_seconds": 60,
+      "critical_long_running_seconds": 300
+    },
+    "locks": {
+      "attention_current_waits": 1,
+      "critical_current_waits": 5
+    },
+    "innodb": {
+      "attention_buffer_pool_hit_ratio_pct_below": 99.0,
+      "critical_buffer_pool_hit_ratio_pct_below": 95.0,
+      "attention_log_waits": 1
+    },
+    "tables": {
+      "attention_fragmentation_pct": 15,
+      "critical_auto_increment_usage_pct": 90
+    },
+    "workload": {
+      "attention_tmp_disk_tables": 1,
+      "attention_no_index_used": 1,
+      "attention_p95_latency_seconds": 1.0,
+      "critical_p95_latency_seconds": 10.0,
+      "recurring_digest_min_executions": 5
+    },
+    "errors": {
+      "attention_error_count": 1,
+      "critical_error_count": 100
+    }
+  }
+}

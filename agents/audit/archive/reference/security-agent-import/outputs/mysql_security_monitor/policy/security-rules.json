@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "mode": "detect_only",
+  "purpose": "Baseline declarativo para comparação pelo coletor e por uma LLM; não altera o MySQL.",
+  "identity_handling": {
+    "collector_output": "sha256 truncated to 16 hexadecimal characters",
+    "policy_input": "IPs e usuários podem ficar em claro neste arquivo protegido; o coletor os transforma antes de comparar."
+  },
+  "controls": {
+    "require_secure_transport": true,
+    "allow_local_infile": false,
+    "maximum_default_password_lifetime_days": 365,
+    "maximum_broad_host_accounts": 0,
+    "maximum_delegable_elevated_privilege_assignments": 0,
+    "require_audit_event_coverage": true,
+    "successful_drop_severity": "attention",
+    "treat_blocked_drop_attempt_as_critical": true,
+    "treat_identity_changes_as_critical": true
+  },
+  "network": {
+    "allowed_source_ips": [],
+    "empty_list_behavior": "not_evaluated",
+    "notes": "Preencha com IPs individuais autorizados; enquanto vazia, conexões não serão bloqueadas nem marcadas apenas por esta regra."
+  },
+  "account_access": [],
+  "account_access_schema": {
+    "user": "nome_do_usuario_mysql",
+    "allowed_source_ips": ["203.0.113.10"],
+    "allowed_utc_windows": [
+      {"days": [0, 1, 2, 3, 4], "start": "08:00", "end": "18:00"}
+    ],
+    "notes": "days usa 0=segunda-feira até 6=domingo; use uma regra por usuário."
+  },
+  "principles": [
+    "Negar por padrão conexões de origem não autorizada após preencher a lista de IPs.",
+    "Separar contas humanas, serviço, administração e coleta; cada uma com privilégio mínimo.",
+    "Exigir TLS para transporte remoto e certificado de cliente para contas administrativas quando suportado.",
+    "Não registrar SQL literal ou dados pessoais no artefato enviado à LLM.",
+    "Tratar cobertura Audit incompleta como risco crítico de observabilidade, nunca como ausência de incidente.",
+    "Toda exceção deve ter proprietário, motivo, data de expiração e revisão periódica."
+  ],
+  "recommended_rules": [
+    "Criar regras por conta para IPs e janelas UTC de DBAs e contas de serviço.",
+    "Definir máximo de falhas de autenticação por IP/usuário por janela após a telemetria Audit estar disponível.",
+    "Marcar DDL fora de janela de mudança aprovada como crítico.",
+    "Tratar DROP TABLE/DROP DATABASE, mesmo quando bloqueado, como evento crítico até haver correlação com mudança aprovada.",
+    "Restringir contas com FILE, SYSTEM_VARIABLES_ADMIN, ROLE_ADMIN, SHUTDOWN ou AUDIT_ADMIN a uma lista de exceções aprovada.",
+    "Alertar sobre criação de usuário, GRANT, REVOKE, mudança de senha e alteração de filtro Audit."
+  ]
+  ,"llm_analysis_guidance": {
+    "audit.ddl.successful_drop": "Classifique como atenção: pode ser uma mudança autorizada, mas exija validação de ticket, ator, origem, escopo e impacto.",
+    "audit.ddl.blocked_drop_attempt": "Classifique como crítico: uma tentativa bloqueada de DROP é evidência de ação destrutiva não autorizada e pode indicar sabotagem, conta comprometida ou abuso de privilégio. Correlacione actor_id, source_id, horário, falhas de login e outros eventos do mesmo snapshot.",
+    "data_quality.truncated_domains": "Não conclua ausência de eventos em domínio truncado; reporte a limitação e recomende aumentar o limite ou reduzir a janela."
+  }
+}

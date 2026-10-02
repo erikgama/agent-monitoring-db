@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision",
+    "query_id",
+    "query_fingerprint",
+    "observed_latency_seconds",
+    "evidence_quality",
+    "summary"
+  ],
+  "properties": {
+    "decision": {"enum": ["candidate", "no_candidate", "inconclusive"]},
+    "query_id": {"type": ["string", "null"]},
+    "query_fingerprint": {"type": ["string", "null"]},
+    "observed_latency_seconds": {"type": ["number", "null"]},
+    "evidence_quality": {"enum": ["sufficient", "insufficient"]},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 500}
+  }
+}
+

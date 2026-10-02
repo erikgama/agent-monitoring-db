@@ -1,0 +1,764 @@
+AGENTES DE IA APLICADOS À OBSERVABILIDADE E À SEGURANÇA DO MYSQL
+
+Material de apoio para apresentação no NotebookLM
+
+
+1. MENSAGEM CENTRAL DA APRESENTAÇÃO
+
+Este projeto demonstra uma arquitetura em que agentes de IA não substituem o
+DBA e não recebem liberdade irrestrita para modificar o banco. Eles trabalham
+como especialistas digitais com responsabilidades bem definidas: observam,
+organizam evidências, interpretam regras em linguagem natural, comunicam
+ocorrências por um contrato controlado e entregam contexto para a decisão
+humana.
+
+A ideia principal pode ser resumida assim:
+
+"Transformamos sinais técnicos do MySQL em evidências compreensíveis e
+acionáveis, sem transformar uma observação em autorização automática de
+mudança."
+
+O valor da solução não está apenas em usar um modelo de linguagem. O valor
+está na combinação de coleta determinística, agentes especializados, regras
+claras, comunicação padronizada, rastreabilidade e coordenação do DBA.
+
+
+2. O QUE É UM AGENTE DE IA?
+
+Um modelo de linguagem isolado recebe uma pergunta e produz uma resposta. Um
+agente de IA vai além: ele possui uma missão, recebe contexto, observa um
+ambiente, usa ferramentas autorizadas, aplica regras, produz uma decisão
+estruturada e encaminha o resultado para a próxima etapa do processo.
+
+Um agente pode reunir cinco capacidades principais:
+
+1. Percepção
+   Lê sinais do ambiente, como relatórios, métricas, eventos, documentos ou
+   respostas de ferramentas.
+
+2. Interpretação
+   Relaciona os sinais recebidos com regras e contexto operacional. Ele pode
+   distinguir, por exemplo, uma métrica normal de uma condição que merece
+   atenção.
+
+3. Uso de ferramentas
+   Aciona apenas ferramentas autorizadas. Neste projeto, isso pode significar
+   ler um relatório HTML, iniciar uma coleta read-only ou chamar uma tool MCP.
+
+4. Memória e rastreabilidade
+   Trabalha com artefatos persistidos, identificadores, relatórios e estado
+   mínimo de deduplicação ou cooldown. A conversa não substitui a evidência.
+
+5. Colaboração
+   Entrega uma informação estruturada para outro componente ou agente. Essa
+   colaboração ocorre por contratos explícitos, sem depender de mensagens
+   informais ou interpretações implícitas.
+
+Uma definição simples para usar na apresentação:
+
+"Um agente de IA é um modelo de linguagem inserido em um processo, com papel,
+contexto, ferramentas, regras, limites e uma saída verificável."
+
+
+3. MODELO, COLETOR, AGENTE E MCP NÃO SÃO A MESMA COISA
+
+Esta separação é essencial para entender a arquitetura.
+
+Modelo de linguagem:
+É o mecanismo de raciocínio e interpretação. Neste projeto, os agentes de
+Health Check e Audit usam o modelo gpt-5.6-luna com esforço low para decisões
+frequentes, rápidas e delimitadas. O chat contextual do DBA usa gpt-5.6-sol
+com esforço medium para uma conversa técnica mais profunda.
+
+Coletor:
+É código determinístico. Ele executa consultas read-only previamente
+autorizadas, normaliza resultados e gera arquivos JSON e HTML. O coletor não
+decide se deve existir um alerta e não chama o MCP.
+
+Agente:
+Lê o relatório produzido pelo coletor, combina a evidência com regras em
+linguagem natural, devolve uma decisão estruturada e, quando autorizado pelo
+fluxo, chama a ferramenta responsável pelo próximo passo.
+
+MCP:
+O Model Context Protocol é a fronteira padronizada de comunicação e uso de
+ferramentas. Neste projeto, o MCP central não é o agente que interpreta o
+problema. Ele recebe um alerta já decidido, valida o contrato e encaminha a
+ocorrência para os destinos habilitados.
+
+DBA:
+É o coordenador operacional. Recebe evidências, conversa sobre a ocorrência,
+solicita novas coletas e decide se alguma investigação ou proposta deve
+avançar. Um alerta nunca concede autorização automática para alterar o banco.
+
+
+4. VISÃO GERAL DA ARQUITETURA
+
+                          MYSQL HEATWAVE
+                                |
+               +----------------+----------------+
+               |                                 |
+               v                                 v
+       HEALTH CHECK                         ENTERPRISE AUDIT
+       coleta métricas                      registra eventos
+               |                                 |
+               v                                 v
+       JSON + HTML                         JSON + HTML mascarados
+               |                                 |
+               v                                 v
+       AGENTE LUNA                         AGENTE LUNA
+       interpreta P99                      interpreta eventos elegíveis
+               |                                 |
+               +---------------+-----------------+
+                               |
+                               v
+                    MCP CENTRAL: incident_raise
+                    valida contrato e segurança
+                               |
+                    +----------+----------+
+                    |                     |
+                    v                     v
+              NOTIFICATION              DBA
+              entrega e-mail      preserva e analisa evidências
+                                          |
+                                          v
+                                  REFACTOR, quando solicitado
+
+Essa arquitetura separa observação, interpretação, transporte, entrega e
+decisão operacional. Cada componente faz apenas o que pertence ao seu papel.
+
+
+5. AGENTE HEALTH CHECK
+
+Missão:
+Observar saúde e performance do MySQL HeatWave em modo somente leitura e
+entregar evidências atuais ao DBA.
+
+O Health Check possui dois fluxos complementares.
+
+5.1. Monitor específico de latência
+
+O monitor acompanha uma SELECT conhecida do schema sakila, identificada pelo
+digest SHA-256 configurado para actor_popularity. O texto SQL bruto não precisa
+ser persistido para que a consulta seja reconhecida.
+
+O coletor consulta principalmente:
+
+- performance_schema.events_statements_summary_by_digest
+  Contadores por digest: execuções, tempo total, tempo de lock, linhas
+  examinadas, linhas retornadas, tabelas temporárias, erros e avisos.
+
+- performance_schema.events_statements_histogram_by_digest
+  Histograma usado para estimar percentis da latência, incluindo P95 e P99.
+
+- information_schema.columns
+  Descoberta das capacidades disponíveis na versão atual do MySQL, como
+  QUANTILE_95, QUANTILE_99 e as colunas necessárias do histograma.
+
+- performance_schema.setup_consumers
+  Confirma se o consumer events_statements_history_long está habilitado.
+
+Configuração atual do monitor:
+
+- schema permitido: sakila;
+- janela móvel: 30 segundos;
+- atualização interna da coleta: aproximadamente a cada 7 segundos;
+- leitura do relatório pelo agente: a cada 15 segundos;
+- query timeout compartilhado: 15 segundos;
+- regra: P99 estritamente maior que 2,0 segundos;
+- P99 igual ou inferior a 2,0 segundos: sem alerta;
+- relatório incompleto ou inconsistente: decisão inconclusiva;
+- severidade do alerta elegível: critical;
+- cooldown padrão: 120 segundos.
+
+O ponto central é que o coletor não contém a decisão de alerta. Ele grava
+select_latency/results/latest.json e latest.html. O agente Luna lê o HTML e a
+regra em linguagem natural. Se a evidência comprovar P99 maior que 2,0
+segundos, o agente decide alert. Caso contrário, responde no_alert ou
+inconclusive.
+
+5.2. Relatório geral de saúde
+
+Quando o agente de latência decide gerar um alerta, ele solicita uma coleta
+geral read-only atualizada. Esse relatório fornece contexto mais amplo para o
+DBA e é gravado em JSON e HTML.
+
+Fontes do relatório geral:
+
+Identidade e capacidades da instância
+- VERSION(), variáveis de versão e estado do Performance Schema;
+- information_schema.tables e information_schema.columns;
+- performance_schema.setup_consumers.
+
+Configuração e status globais
+- performance_schema.global_variables;
+- performance_schema.global_status.
+
+Conexões
+- sys.user_summary;
+- sys.host_summary.
+
+Workload do schema sakila
+- performance_schema.events_statements_summary_by_digest.
+
+Sessões ativas do schema sakila
+- sys.processlist;
+- fallback em performance_schema.threads.
+
+Locks e deadlocks
+- performance_schema.data_lock_waits;
+- performance_schema.data_locks;
+- sys.schema_table_lock_waits;
+- performance_schema.events_errors_summary_global_by_error para o contador
+  global de deadlocks.
+
+InnoDB
+- performance_schema.global_status;
+- information_schema.INNODB_METRICS.
+
+Tabelas do schema sakila
+- information_schema.TABLES;
+- information_schema.COLUMNS;
+- information_schema.TABLE_CONSTRAINTS.
+
+Índices do schema sakila
+- sys.schema_unused_indexes;
+- sys.schema_redundant_indexes;
+- information_schema.STATISTICS;
+- information_schema.TABLES.
+
+Erros globais
+- performance_schema.events_errors_summary_global_by_error.
+
+Replicação
+- SHOW REPLICA STATUS;
+- performance_schema.replication_connection_status;
+- performance_schema.replication_applier_status;
+- performance_schema.replication_group_members.
+
+5.3. Escopo correto das métricas
+
+Nem toda informação do relatório geral pertence exclusivamente ao schema
+sakila. Isso deve ficar claro na apresentação:
+
+- Escopo schema: workload, sessões ativas, tabelas e índices são filtrados por
+  sakila.
+- Escopo instance: conexões, InnoDB, erros e replicação descrevem a instância
+  inteira.
+- Escopo mixed: locks combinam esperas atuais filtradas por sakila com o
+  contador global de deadlocks.
+
+Uma métrica global nunca deve ser apresentada como se tivesse sido causada
+somente pelo schema sakila.
+
+5.4. Regras gerais do relatório
+
+O relatório mantém somente o snapshot mais recente, não persiste texto bruto
+de query nem logs brutos e limita a quantidade de linhas por seção. Os limites
+atuais são, em geral, 10 itens para conexões, workload, sessões, tabelas e
+índices, e 20 itens para locks e erros.
+
+Existem thresholds de avaliação do relatório, por exemplo:
+
+- uso de conexões: atenção em 70% e crítico em 85%;
+- sessões longas: atenção em 60 segundos e crítico em 300 segundos;
+- esperas de lock atuais: atenção a partir de 1 e crítico a partir de 5;
+- buffer pool hit ratio: atenção abaixo de 99% e crítico abaixo de 95%;
+- P95 do workload: atenção acima de 1 segundo e crítico acima de 10 segundos;
+- erros acumulados: atenção a partir de 1 e crítico a partir de 100.
+
+Esses thresholds organizam a avaliação do relatório geral. Eles não devem ser
+confundidos com a regra específica do alerta de latência, que é P99 maior que
+2,0 segundos e pertence ao agente Luna.
+
+
+6. AGENTE AUDIT SECURITY
+
+Missão:
+Ler o MySQL Enterprise Audit em modo somente leitura, mascarar informações
+sensíveis, organizar fatos de segurança e permitir que o agente Luna decida
+se um evento atual atende às regras de alerta.
+
+6.1. Fonte principal dos eventos
+
+O coletor usa a função audit_log_read() do MySQL Enterprise Audit. Os eventos
+são lidos em páginas e normalizados em quatro domínios:
+
+- audit_connections: conexões e desconexões;
+- audit_ddl: operações DDL observadas;
+- audit_errors: eventos com falha;
+- audit_sakila_data_access: leituras e alterações observadas em tabelas de
+  sakila.
+
+Antes de persistir os dados, o coletor remove ou pseudonimiza:
+
+- texto SQL literal;
+- nome de usuário;
+- endereço de origem;
+- identificador de sessão;
+- nomes de schemas fora do escopo.
+
+No lugar de identidades e texto bruto, o relatório usa fingerprints SHA-256,
+escopo normalizado, comando, resultado, código de erro, horário e demais
+campos necessários para interpretar o evento sem expor informação sensível.
+
+6.2. Snapshot complementar de segurança
+
+Além do Audit Log, o coletor consulta fontes read-only para contextualizar o
+estado de segurança:
+
+- information_schema.plugins e performance_schema.global_variables para
+  versão, transporte seguro e configuração geral do plugin Audit;
+- performance_schema.threads e performance_schema.status_by_thread para
+  conexões ativas e observação de TLS;
+- mysql.user para características das contas, sem selecionar material de
+  autenticação;
+- information_schema.user_privileges para privilégios globais;
+- mysql.role_edges para relações de roles;
+- mysql_audit.audit_log_filter e mysql_audit.audit_log_user para cobertura e
+  atribuição do filtro, sem retornar o JSON bruto do filtro nem identidades.
+
+6.3. Configuração atual
+
+- coleta contínua: a cada 15 segundos;
+- leitura pelo agente Luna: a cada 15 segundos;
+- janela padrão consultada no Audit Log: 1 minuto;
+- escopo funcional de alerta: sakila;
+- eventos anteriores ao início do agente são considerados históricos;
+- coleta somente leitura;
+- nenhuma alteração em filtros Audit, usuários, privilégios ou parâmetros.
+
+6.4. Regras atuais em linguagem natural
+
+Somente eventos atuais do domínio audit_ddl podem produzir alerta.
+
+Regra 1: DDL destrutivo bloqueado
+- DROP DATABASE, DROP TABLE ou TRUNCATE direcionado a sakila;
+- resultado failure;
+- código MySQL 1044, 1142 ou 1227;
+- categoria destructive_ddl;
+- severidade critical.
+
+Regra 2: ALTER TABLE bloqueado
+- ALTER TABLE direcionado a sakila;
+- resultado failure;
+- código MySQL 1044, 1142 ou 1227;
+- categoria schema_change;
+- severidade critical.
+
+O agente não alerta para DDL bem-sucedido, outros schemas, outros códigos,
+eventos antigos ou evidência incompleta. O fluxo demonstra uma distinção
+importante: a tentativa foi observada e bloqueada; isso não significa que a
+mudança tenha sido aplicada.
+
+
+7. POR QUE USAR REGRAS EM LINGUAGEM NATURAL?
+
+As regras dos agentes ficam em arquivos Markdown legíveis por pessoas. Isso
+permite que uma política operacional seja revisada por quem entende do negócio
+e do banco, sem esconder toda a intenção dentro de condicionais espalhadas em
+código.
+
+O modelo interpreta a regra, mas a saída não é aceita cegamente. Depois da
+decisão do Luna:
+
+- a resposta deve obedecer a um schema estruturado;
+- os campos selecionados precisam existir na evidência original;
+- o contrato do alerta é validado localmente;
+- cooldown ou deduplicação impedem repetição descontrolada;
+- o MCP revalida tudo antes do encaminhamento.
+
+Assim, linguagem natural oferece flexibilidade, enquanto schemas, validadores
+e contratos oferecem controle.
+
+
+8. O PAPEL DO MCP CENTRAL
+
+O MCP central expõe uma única tool principal: incident_raise.
+
+Ele recebe alertas nos contratos:
+
+- health_check_alert.v1;
+- audit_security_alert.v1.
+
+O MCP não consulta o MySQL, não interpreta P99, não decide severidade e não
+executa correções. Sua responsabilidade é validar e transportar.
+
+Entre as validações realizadas estão:
+
+- versão e estrutura do contrato;
+- origem, categoria e severidade permitidas;
+- UUIDs e timestamps com fuso;
+- consistência do audit_id entre alerta e evidência;
+- consistência entre horário e versão dos relatórios;
+- chave de deduplicação estável;
+- ausência de campos sensíveis, credenciais, endpoints e connection strings.
+
+Depois da validação, o MCP realiza um fan-out independente:
+
+1. Notification
+   Recebe o alerta validado e tenta entregar o e-mail conforme a configuração
+   local de severidade e destinatários.
+
+2. DBA
+   Registra a ocorrência em uma inbox técnica privada para consulta e análise.
+
+Uma falha na rota de e-mail não impede a tentativa de registro no DBA, e uma
+falha no registro do DBA não altera a validação da rota Notification.
+
+
+9. NOTIFICATION: ENTREGA SEM TOMAR DECISÕES
+
+Notification é um componente de entrega, não um agente de diagnóstico.
+
+Ele:
+
+- recebe somente alertas já validados pelo MCP;
+- revalida o contrato;
+- respeita a severidade recebida;
+- escolhe destinatários apenas pela configuração local;
+- monta o e-mail;
+- realiza no máximo uma tentativa SMTP.
+
+Ele não:
+
+- consulta o banco;
+- recalcula severidade;
+- lê métricas;
+- escolhe uma correção;
+- recebe destinatários livres dentro do alerta;
+- conversa diretamente com Health Check ou Audit.
+
+Essa separação evita que credenciais de e-mail ou políticas de destinatários
+se espalhem pelos agentes de observabilidade.
+
+
+10. O DBA COMO COORDENADOR OPERACIONAL
+
+O DBA possui a visão mais ampla do fluxo. Ele recebe os alertas, preserva as
+evidências e decide o próximo passo. Essa autoridade é maior que a dos agentes
+observadores, mas continua sujeita a confirmação, evidência e limites.
+
+Na Central de Ocorrências, o DBA recebe:
+
+- alertas do Health Check com o alerta validado e o relatório geral em JSON e
+  HTML;
+- alertas do Audit com resumos sanitizados do alerta e do evento;
+- um resumo factual gerado pelo Luna a partir dos arquivos recebidos;
+- um chat contextual com um DBA sênior de MySQL baseado em gpt-5.6-sol com
+  esforço medium.
+
+O chat recebe apenas a ocorrência selecionada, seu resumo, as evidências
+autorizadas e o histórico recente da conversa. Ele ajuda a explicar o que foi
+observado, separa métricas do schema de métricas globais e aponta informações
+ausentes.
+
+Mesmo com acesso operacional mais amplo, o DBA não transforma automaticamente
+um alerta em mudança. O chat de ocorrência não consulta o banco e não executa
+SQL. Coletas e consultas read-only autorizadas podem ser iniciadas pelo
+operador por ações específicas e confirmadas. DDL, DML, privilégios,
+configuração ou infraestrutura exigem autorização explícita e uma tarefa
+separada, com plano de validação e reversão.
+
+
+11. O PAPEL DO REFACTOR
+
+Quando uma consulta realmente precisa de investigação, somente o DBA pode
+encaminhá-la ao agente Refactor.
+
+O Refactor:
+
+- preserva literalmente o SQL original;
+- recebe contexto e evidências do DBA;
+- propõe uma versão alternativa;
+- valida equivalência no schema sakila_dev;
+- compara resultado e plano;
+- devolve a proposta ao DBA.
+
+O Refactor não recebe solicitações diretas do Health Check ou Audit e não
+aplica automaticamente sua proposta em produção. Isso mantém a cadeia de
+responsabilidade clara.
+
+
+12. FLUXO PONTA A PONTA: EXEMPLO DE LATÊNCIA
+
+1. Uma carga read-only executa a SELECT monitorada em sakila.
+2. O coletor de latência lê os contadores e histogramas do Performance Schema.
+3. O coletor grava latest.json e latest.html.
+4. A cada 15 segundos, o agente Luna verifica se existe uma coleta nova.
+5. Luna lê o HTML e aplica a regra P99 maior que 2,0 segundos.
+6. Se a condição não for comprovada, não existe alerta.
+7. Se a condição for comprovada, o agente solicita uma coleta geral nova.
+8. O agente monta e valida health_check_alert.v1.
+9. O processo do agente chama incident_raise no MCP por stdio.
+10. O MCP valida o contrato e a ausência de dados sensíveis.
+11. Notification recebe o alerta para a entrega configurada.
+12. O DBA recebe o alerta e o relatório geral atualizado.
+13. A Central de Ocorrências gera um resumo factual para facilitar a leitura.
+14. O operador pode conversar com o DBA contextual sem liberar alterações no
+    banco.
+
+
+13. FLUXO PONTA A PONTA: EXEMPLO DE AUDIT
+
+1. Uma conta restrita tenta executar um ALTER TABLE em sakila.
+2. O MySQL nega a operação com um erro de privilégio.
+3. O Enterprise Audit registra o evento.
+4. O coletor usa audit_log_read() para ler o evento em modo read-only.
+5. Identidade, origem, sessão e SQL literal são removidos ou
+   pseudonimizados.
+6. O coletor grava latest.json e latest.html.
+7. Luna lê o HTML e verifica a regra de ALTER TABLE bloqueado.
+8. A evidência selecionada pelo agente é conferida contra o JSON original.
+9. O alerta audit_security_alert.v1 é validado e enviado ao MCP.
+10. MCP encaminha independentemente para Notification e DBA.
+11. O DBA recebe uma evidência sanitizada mostrando que a tentativa foi
+    bloqueada, sem expor identidade ou SQL literal.
+
+
+14. SEGURANÇA E GOVERNANÇA BY DESIGN
+
+Os controles mais importantes desta arquitetura são:
+
+- escopo de banco limitado a sakila para DBA, Health Check e Audit;
+- sakila_dev reservado ao Refactor;
+- coletores read-only;
+- SQL versionado e allowlisted;
+- credenciais referenciadas, nunca copiadas para relatórios ou prompts;
+- ausência de SQL bruto em evidências persistidas de monitoramento;
+- pseudonimização de identidades e origens no Audit;
+- contratos JSON fechados e versionados;
+- validação antes e depois da decisão do modelo;
+- cooldown e deduplicação;
+- inboxes separadas por origem;
+- nenhuma mudança automática no banco;
+- DBA como único coordenador operacional;
+- aprovação, validação e reversão obrigatórias para propostas de mudança.
+
+Uma frase útil para a apresentação:
+
+"Autonomia não significa ausência de controle. O agente ganha autonomia para
+interpretar e comunicar, mas não para ultrapassar sua responsabilidade."
+
+
+15. O QUE ESTE PROJETO DEMONSTRA
+
+O projeto demonstra que agentes de IA podem participar de operações de banco
+de dados sem receber acesso irrestrito ou substituir ferramentas
+determinísticas.
+
+Ele combina:
+
+- telemetria nativa do MySQL;
+- MySQL Enterprise Audit;
+- relatórios legíveis por máquina e por pessoas;
+- regras operacionais em linguagem natural;
+- modelos diferentes conforme a complexidade da tarefa;
+- MCP como fronteira padronizada;
+- contratos e validação de segurança;
+- notificações controladas;
+- uma experiência centralizada para o DBA.
+
+O resultado é uma arquitetura em que a IA reduz o tempo entre o sinal técnico
+e a compreensão humana, preservando evidência, contexto e governança.
+
+
+16. O QUE NÃO DEVEMOS AFIRMAR
+
+- O agente não substitui o DBA.
+- O agente não corrige automaticamente o banco.
+- O MCP não é o responsável por interpretar a métrica.
+- O coletor não toma a decisão do alerta.
+- Um e-mail enviado não comprova que alguém leu a mensagem.
+- Um alerta registrado não autoriza uma mudança.
+- Uma métrica global não pertence automaticamente ao schema sakila.
+- Uma tentativa de DDL bloqueada não significa que o DDL foi aplicado.
+- Um relatório ou resumo não comprova causa raiz quando essa causa não está nas
+  evidências.
+
+
+17. SUGESTÃO DE ROTEIRO PARA OS SLIDES
+
+Slide 1 — Título
+Agentes de IA para observabilidade e segurança do MySQL
+
+Mensagem:
+Da telemetria técnica à decisão humana, com agentes especializados e
+governança.
+
+Slide 2 — O que é um agente de IA?
+Mostrar a diferença entre chat, modelo e agente.
+
+Mensagem:
+Um agente possui missão, contexto, ferramentas, regras, limites e uma saída
+verificável.
+
+Slide 3 — Capacidades de um agente
+Percepção, interpretação, ferramentas, memória e colaboração.
+
+Slide 4 — Arquitetura do projeto
+Exibir o diagrama com Health Check, Audit, Luna, MCP, Notification e DBA.
+
+Slide 5 — Por que separar responsabilidades?
+Coletor coleta. Agente interpreta. MCP valida e transporta. Notification
+entrega. DBA decide.
+
+Slide 6 — Health Check
+Mostrar Performance Schema, digest, histograma e regra de P99 maior que 2,0
+segundos.
+
+Slide 7 — Relatório geral
+Mostrar a separação entre métricas de schema, de instância e de escopo misto.
+
+Slide 8 — Audit Security
+Mostrar Enterprise Audit, audit_log_read(), mascaramento e regras de DDL
+bloqueado.
+
+Slide 9 — Comunicação via MCP
+Mostrar o contrato incident_raise, validação e fan-out para Notification e DBA.
+
+Slide 10 — Central do DBA
+Mostrar alertas, evidências JSON/HTML, resumo factual e chat contextual.
+
+Slide 11 — Guardrails
+Read-only, allowlist, contratos, pseudonimização, cooldown, deduplicação e
+aprovação humana.
+
+Slide 12 — Demonstração ponta a ponta
+Escolher um cenário: P99 acima de 2 segundos ou ALTER TABLE bloqueado.
+
+Slide 13 — Encerramento
+"A IA interpreta e conecta evidências. O DBA mantém a autoridade operacional."
+
+
+18. DEMONSTRAÇÃO SUGERIDA
+
+Cenário Health Check:
+
+1. Ativar o serviço de monitoração.
+2. Mostrar a coleta da SELECT por digest.
+3. Mostrar o HTML de latência sendo atualizado.
+4. Explicar que o coletor ainda não decidiu nada.
+5. Mostrar a decisão do Luna quando o P99 ultrapassa 2,0 segundos.
+6. Mostrar a chamada MCP e o registro da ocorrência.
+7. Abrir a Central do DBA.
+8. Comparar a evidência específica de latência com o relatório geral.
+9. Fazer uma pergunta contextual no chat do DBA.
+
+Cenário Audit:
+
+1. Ativar o coletor e o agente Audit.
+2. Executar a tentativa controlada com uma conta restrita.
+3. Confirmar que o MySQL negou a operação.
+4. Mostrar o evento já mascarado no relatório.
+5. Mostrar a interpretação do Luna.
+6. Mostrar o alerta chegando ao MCP, Notification e DBA.
+7. Reforçar que nenhuma alteração foi aplicada.
+
+
+19. PERGUNTAS QUE PODEM SURGIR NA APRESENTAÇÃO
+
+Por que não fazer tudo com IF/ELSE?
+Coletores, validações e segurança continuam determinísticos. O agente é usado
+onde regras em linguagem natural, interpretação contextual e evolução da
+política agregam valor. A saída do modelo continua estruturada e validada.
+
+O agente tem acesso direto ao banco?
+Os coletores usam apenas consultas read-only autorizadas. Luna interpreta os
+arquivos gerados. O chat do DBA trabalha com a ocorrência selecionada e não
+executa SQL.
+
+Quem envia o alerta?
+O processo Python do agente, após receber e validar a decisão do Luna, chama a
+tool incident_raise no MCP. O arquivo de decisão não é usado como fila e não
+existe um file watcher oculto publicando alertas.
+
+Quem envia o e-mail?
+Notification. Health Check e Audit não conhecem senha SMTP nem destinatários.
+
+O MCP decide se existe um incidente?
+Não. A decisão pertence ao agente especialista. O MCP valida o contrato e
+encaminha.
+
+O DBA pode alterar o banco automaticamente?
+Não. O DBA é o coordenador com maior autoridade operacional, mas qualquer
+mudança exige autorização explícita, uma tarefa separada, validação e plano de
+reversão.
+
+Por que gerar JSON e HTML?
+O JSON preserva estrutura e facilita validação. O HTML oferece uma evidência
+legível por pessoas e é o documento interpretado pelos agentes Luna nos fluxos
+de Health Check e Audit.
+
+Como evitamos alertas repetidos?
+O Health Check usa cooldown e o Audit usa deduplicação por chave estável do
+evento. O MCP e as inboxes também tratam reentregas de forma idempotente.
+
+
+20. FRASES DE IMPACTO PARA USAR NA APRESENTAÇÃO
+
+"Não colocamos a IA no lugar do monitoramento; colocamos a IA entre a evidência
+e a compreensão."
+
+"O coletor mede. O agente interpreta. O MCP governa a passagem. O DBA decide."
+
+"Cada agente sabe o que pode fazer, o que não pode fazer e para quem deve
+responder."
+
+"Linguagem natural traz flexibilidade; contratos e validadores mantêm o
+controle."
+
+"O alerta inicia uma conversa baseada em evidência, não uma mudança automática
+no banco."
+
+"A inteligência está distribuída por papéis, mas a autoridade operacional
+permanece centralizada no DBA."
+
+
+21. FONTES INTERNAS DO PROJETO
+
+Arquitetura e governança:
+- AGENTS.md
+- MEMORY.md
+- docs/architecture.md
+- docs/agent-topology.md
+
+Health Check:
+- agents/health-check/AGENTS.md
+- agents/health-check/docs/LLM_ONBOARDING.md
+- agents/health-check/advisor/rules.md
+- agents/health-check/policy.json
+- agents/health-check/general_report/rules/report-rules.json
+- agents/health-check/general_report/sql/
+- agents/health-check/select_latency/sql/110_select_latency.sql
+
+Audit Security:
+- agents/audit/AGENTS.md
+- agents/audit/docs/LLM_ONBOARDING.md
+- agents/audit/audit_security/advisor/rules.md
+- agents/audit/audit_security/collector.py
+- agents/audit/audit_security/sql/security_snapshot/
+
+MCP e Notification:
+- mcp/README.md
+- mcp/docs/tool-catalog.md
+- agents/notification/AGENTS.md
+
+DBA e análise das ocorrências:
+- agents/dba/AGENTS.md
+- agents/dba/README.md
+- agents/dba/chat/prompt.md
+
+
+22. ENCERRAMENTO
+
+Este projeto não apresenta a IA como uma caixa-preta com acesso total ao banco.
+Ele apresenta uma arquitetura governada de agentes especializados.
+
+Health Check observa performance. Audit observa segurança. Luna interpreta
+evidências delimitadas. MCP valida e conecta. Notification entrega. O DBA
+recebe contexto, conversa com as evidências e mantém a decisão operacional.
+
+Esse é o principal aprendizado da solução: agentes de IA tornam a operação
+mais compreensível e coordenada quando autonomia, evidência e responsabilidade
+são desenhadas juntas.

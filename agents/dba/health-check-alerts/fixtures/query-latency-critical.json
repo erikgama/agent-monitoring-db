@@ -1,0 +1,73 @@
+{
+  "contract_version": "health_check_alert.v1",
+  "alert_id": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "audit_id": "33333333-3333-4333-8333-333333333333",
+  "detected_at": "2026-01-15T13:00:06.000Z",
+  "environment": "example-prod",
+  "source": "health-check",
+  "severity": "critical",
+  "category": "query_latency",
+  "title": "P99 acima de 2 segundos na SELECT monitorada do Sakila",
+  "summary": "Fixture sintetica do contrato atual para testar a inbox do DBA.",
+  "findings": [
+    {
+      "check_id": "health-check-luna.select-latency.p99-gt-2s",
+      "metric": "p99_seconds",
+      "observed_value": 2.5,
+      "threshold": 2.0,
+      "unit": "seconds",
+      "evidence": {
+        "p99_seconds": 2.5,
+        "source_audit_id": "22222222-2222-4222-8222-222222222222",
+        "source_document": "select_latency/results/latest.html"
+      },
+      "affected_objects": [
+        "sakila.actor_popularity"
+      ]
+    }
+  ],
+  "dedupe_key": "sakila:actor_popularity:query_latency:p99_gt_2s",
+  "report": {
+    "json": {
+      "schema_version": "1.0",
+      "audit_id": "33333333-3333-4333-8333-333333333333",
+      "started_at": "2026-01-15T13:00:04.000Z",
+      "finished_at": "2026-01-15T13:00:05.000Z",
+      "collected_at": "2026-01-15T13:00:05.000Z",
+      "duration_ms": 1000,
+      "target": {
+        "engine": "MySQL",
+        "service": "MySQL HeatWave"
+      },
+      "scope": {
+        "schemas": [
+          "sakila"
+        ]
+      },
+      "overall_status": "healthy",
+      "capabilities": {
+        "statement_digests": "available"
+      },
+      "instance": {},
+      "domains": {
+        "connections": {
+          "status": "healthy",
+          "findings": []
+        }
+      },
+      "findings": [],
+      "data_retention": {
+        "mode": "latest_only",
+        "raw_query_text_persisted": false,
+        "raw_logs_persisted": false
+      }
+    },
+    "html": "<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"utf-8\"><title>Relatorio geral</title></head><body><p>Audit ID: 33333333-3333-4333-8333-333333333333</p><h1>Health Check</h1></body></html>",
+    "report_generated_at": "2026-01-15T13:00:05.000Z",
+    "report_format_version": "1.0"
+  },
+  "metadata": {
+    "fixture": true,
+    "synthetic": true
+  }
+}

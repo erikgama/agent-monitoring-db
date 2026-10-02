@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-monitoring-health-check"
+version = "0.1.0"
+description = "MySQL HeatWave health collection and Luna-owned alert client"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["agent-monitoring", 
+  "jsonschema>=4.26,<5",
+  "mcp>=1.30,<2",
+]
+
+[project.scripts]
+mysql-health-check = "general_report.main:main"
+mysql-health-latency = "select_latency.collector:main"
+mysql-health-advisor = "advisor.agent:main"
+mysql-health-refactor-collector = "refactor_collector.collect_query_tuning_snapshot:main"
+mysql-health-refactor-advisor = "refactor_collector.advisor:main"
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.13,<1",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["advisor*", "src*", "general_report*", "select_latency*", "refactor_collector*"]
+
+[tool.setuptools.package-data]
+advisor = ["*.json", "*.md"]
+general_report = ["rules/*.json", "sql/*.sql"]
+select_latency = ["sql/*.sql"]
+refactor_collector = ["*.json", "*.md", "*.sql", "rules/*.json", "sql/*.sql"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["E402"]
+
+[tool.uv.sources]
+agent-monitoring = { path = "../..", editable = true }

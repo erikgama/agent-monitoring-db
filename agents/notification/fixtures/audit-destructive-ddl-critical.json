@@ -1,0 +1,76 @@
+{
+  "contract_version": "audit_security_alert.v1",
+  "alert_id": "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa",
+  "audit_id": "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb",
+  "detected_at": "2026-09-16T18:30:05.000Z",
+  "environment": "demo-sakila",
+  "source": "audit-security",
+  "severity": "critical",
+  "category": "destructive_ddl",
+  "title": "Tentativa sem permissão de DDL destrutivo em sakila",
+  "summary": "O MySQL negou por permissão uma tentativa de remoção em sakila. O evento requer investigação do DBA.",
+  "findings": [
+    {
+      "check_id": "audit_security.sakila.blocked_destructive_ddl",
+      "metric": "blocked_destructive_ddl_attempt",
+      "observed_value": true,
+      "threshold": false,
+      "unit": "event",
+      "evidence": {
+        "occurred_at_utc": "2026-09-16T18:30:00.000Z",
+        "event_id": 0,
+        "event_key": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "sql_command": "drop_table",
+        "outcome": "failure",
+        "status_code": 1142,
+        "schema_scope": "sakila",
+        "scope_evidence": "structured_database",
+        "actor_id": "sha256:1111111111111111",
+        "source_id": "sha256:2222222222222222",
+        "session_id": "sha256:3333333333333333",
+        "sql_fingerprint": "sha256:4444444444444444",
+        "sql_length": 31
+      },
+      "affected_objects": ["schema:sakila"]
+    }
+  ],
+  "dedupe_key": "audit-security:sakila:blocked-destructive-ddl:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "report": {
+    "json": {
+      "schema_version": "mysql_audit_security_snapshot.v1",
+      "audit_id": "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb",
+      "started_at": "2026-09-16T18:29:59.000Z",
+      "finished_at": "2026-09-16T18:30:01.000Z",
+      "collected_at": "2026-09-16T18:30:01.000Z",
+      "duration_ms": 2000,
+      "target": {"service": "mysql-heatwave", "environment": "demo-sakila"},
+      "scope": {"functional_schemas": ["sakila"]},
+      "collector": {"name": "audit-security", "mode": "read_only", "raw_sql_persisted": false},
+      "overall_status": "critical",
+      "data_quality": {"unavailable_domains": [], "truncated_domains": []},
+      "policy_evaluation": {"status": "evaluated"},
+      "domains": {
+        "audit_ddl": {
+          "row_count_returned": 1,
+          "rows": [
+            {
+              "event_key": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "sql_command": "drop_table",
+              "outcome": "failure",
+              "status_code": 1142,
+              "schema_scope": "sakila",
+              "scope_evidence": "structured_database"
+            }
+          ]
+        }
+      }
+    },
+    "html": "<!doctype html><html><body><p>Audit ID: bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb</p><p>Coletado em 2026-09-16T18:30:01.000Z</p></body></html>",
+    "report_generated_at": "2026-09-16T18:30:01.000Z",
+    "report_format_version": "mysql_audit_security_snapshot.v1"
+  },
+  "metadata": {
+    "event_id": 0,
+    "event_key": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+}

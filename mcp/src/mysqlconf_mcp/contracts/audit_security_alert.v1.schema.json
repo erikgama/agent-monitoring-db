@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "audit_security_alert.v1",
+  "title": "MySQL HeatWave Audit Security Alert v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "alert_id",
+    "audit_id",
+    "detected_at",
+    "environment",
+    "source",
+    "severity",
+    "category",
+    "title",
+    "summary",
+    "findings",
+    "dedupe_key",
+    "report"
+  ],
+  "properties": {
+    "contract_version": {"const": "audit_security_alert.v1"},
+    "alert_id": {"type": "string", "format": "uuid"},
+    "audit_id": {"type": "string", "format": "uuid"},
+    "detected_at": {"type": "string", "format": "date-time", "pattern": "Z$"},
+    "environment": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "source": {"const": "audit-security"},
+    "severity": {"enum": ["info", "warning", "critical"]},
+    "category": {
+      "enum": [
+        "destructive_ddl",
+        "schema_change"
+      ]
+    },
+    "title": {"type": "string", "minLength": 1, "maxLength": 160},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "findings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "dedupe_key": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[^\\s]+$"
+    },
+    "report": {"$ref": "#/$defs/report"},
+    "metadata": {"type": "object", "additionalProperties": true}
+  },
+  "$defs": {
+    "jsonValue": {
+      "type": ["null", "boolean", "number", "string", "array", "object"]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["check_id", "metric", "observed_value", "evidence"],
+      "properties": {
+        "check_id": {"type": "string", "minLength": 1},
+        "metric": {"type": "string", "minLength": 1},
+        "observed_value": {"$ref": "#/$defs/jsonValue"},
+        "threshold": {"$ref": "#/$defs/jsonValue"},
+        "unit": {"type": ["string", "null"]},
+        "evidence": {"type": "object", "additionalProperties": true},
+        "affected_objects": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "collectionReport": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "audit_id",
+        "started_at",
+        "finished_at",
+        "collected_at",
+        "duration_ms",
+        "target",
+        "scope",
+        "collector",
+        "overall_status",
+        "data_quality",
+        "policy_evaluation",
+        "domains"
+      ],
+      "properties": {
+        "schema_version": {"type": "string", "minLength": 1},
+        "audit_id": {"type": "string", "format": "uuid"},
+        "collected_at": {"type": "string", "format": "date-time", "pattern": "Z$"}
+      },
+      "additionalProperties": true
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["json", "html", "report_generated_at", "report_format_version"],
+      "properties": {
+        "json": {"$ref": "#/$defs/collectionReport"},
+        "html": {"type": "string", "minLength": 1},
+        "report_generated_at": {"type": "string", "format": "date-time", "pattern": "Z$"},
+        "report_format_version": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

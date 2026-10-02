@@ -1,0 +1,34 @@
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: labconsole
+      POSTGRES_USER: labconsole
+      POSTGRES_PASSWORD: ${LAB_POSTGRES_PASSWORD:?Configure LAB_POSTGRES_PASSWORD}
+    volumes:
+      - lab-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U labconsole]
+      interval: 5s
+      retries: 10
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/lab-console/api/Dockerfile
+    environment:
+      LAB_MODE: ${LAB_MODE:-demo}
+      LAB_ORIGIN: ${LAB_ORIGIN:-http://localhost:3000}
+      LAB_DATABASE_URL: postgresql+psycopg://labconsole:${LAB_POSTGRES_PASSWORD}@database:5432/labconsole
+      LAB_RUNNER_KEY: ${LAB_RUNNER_KEY:-}
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - 127.0.0.1:8000:8000
+  web:
+    build: ./web
+    depends_on: [api]
+    ports:
+      - 127.0.0.1:3000:3000
+volumes:
+  lab-data:

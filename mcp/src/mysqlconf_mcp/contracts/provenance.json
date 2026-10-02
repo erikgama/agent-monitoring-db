@@ -1,0 +1,29 @@
+{
+  "contracts": {
+    "audit_security_alert.v1": {
+      "canonical_path": "../agents/audit/contracts/audit_security_alert.v1.schema.json",
+      "packaged_path": "src/mysqlconf_mcp/contracts/audit_security_alert.v1.schema.json",
+      "canonical_sha256": "b9207ff8f3d56388241b8b15f65309ada0573adc25de5e1a0c1033f23a515a07",
+      "copied_at": "2026-09-16"
+    },
+    "health_check_alert.v1": {
+      "canonical_path": "../agents/health-check/contracts/health_check_alert.v1.schema.json",
+      "packaged_path": "src/mysqlconf_mcp/contracts/health_check_alert.v1.schema.json",
+      "canonical_sha256": "69d38b9f304a4b1b3d170d3e331818acfb4e83efc77264ff2d3662f8d9a7eea7",
+      "copied_at": "2026-09-14"
+    },
+    "query_refactor_request.v1": {
+      "canonical_path": "../agents/health-check/contracts/query_refactor_request.v1.schema.json",
+      "packaged_path": "src/mysqlconf_mcp/contracts/query_refactor_request.v1.schema.json",
+      "canonical_sha256": "01a7146cab51ed97e4704bdbbe802bffc7c861b76def8a488111e1e9f282247c",
+      "copied_at": "2026-09-21"
+    },
+    "query_refactor_result.v1": {
+      "canonical_path": "../agents/refactor/contracts/query_refactor_result.v1.schema.json",
+      "packaged_path": "src/mysqlconf_mcp/contracts/query_refactor_result.v1.schema.json",
+      "canonical_sha256": "75d2f701bfa18cbe3e3606996e3d4cde4ca63539e6647c0f9001b1e6d5c0bdac",
+      "copied_at": "2026-09-21"
+    }
+  },
+  "verification": "The contract-sync test requires byte equality and matching SHA-256 hashes."
+}

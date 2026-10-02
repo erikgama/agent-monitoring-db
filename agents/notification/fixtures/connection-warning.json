@@ -1,0 +1,53 @@
+{
+  "contract_version": "health_check_alert.v1",
+  "alert_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  "audit_id": "33333333-3333-4333-8333-333333333333",
+  "detected_at": "2026-01-15T14:00:05.000Z",
+  "environment": "example-prod",
+  "source": "health-check",
+  "severity": "warning",
+  "category": "connections",
+  "title": "Uso elevado de conexões",
+  "summary": "O uso de conexões ultrapassou o limite de atenção configurado.",
+  "findings": [
+    {
+      "check_id": "connections.usage",
+      "metric": "connection_usage_pct",
+      "observed_value": 76.0,
+      "threshold": 70,
+      "unit": "percent",
+      "evidence": {"threads_connected": 760, "max_connections": 1000},
+      "affected_objects": ["mysql-instance"]
+    }
+  ],
+  "dedupe_key": "example-prod|connections|mysql-instance|connections.usage",
+  "report": {
+    "json": {
+      "schema_version": "1.0",
+      "audit_id": "33333333-3333-4333-8333-333333333333",
+      "started_at": "2026-01-15T14:00:00.000Z",
+      "finished_at": "2026-01-15T14:00:04.000Z",
+      "collected_at": "2026-01-15T14:00:04.000Z",
+      "duration_ms": 4000,
+      "target": {"engine": "MySQL", "service": "MySQL HeatWave", "mysql_version": "example"},
+      "scope": {"schemas": ["sakila"], "top_n": 10},
+      "overall_status": "attention",
+      "capabilities": {"performance_schema": "available", "connection_tls": "enabled"},
+      "instance": {"mysql_version": "example", "config": {"max_connections": 1000}},
+      "domains": {
+        "connections": {
+          "status": "attention",
+          "metrics": {"threads_connected": 760, "connection_usage_pct": 76.0},
+          "findings": []
+        }
+      },
+      "findings": [],
+      "data_retention": {"mode": "latest_only", "raw_query_text_persisted": false, "raw_logs_persisted": false}
+    },
+    "html": "<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"utf-8\"><title>Health Check fictício</title></head><body><p>Audit ID: 33333333-3333-4333-8333-333333333333</p><p>Coletado em: 2026-01-15T14:00:04.000Z</p><p>Uso elevado de conexões</p></body></html>",
+    "report_generated_at": "2026-01-15T14:00:04.000Z",
+    "report_format_version": "1.0"
+  },
+  "metadata": {"example": true}
+}
+

@@ -1,0 +1,66 @@
+{
+  "contract_version": "health_check_alert.v1",
+  "alert_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+  "audit_id": "55555555-5555-4555-8555-555555555555",
+  "detected_at": "2026-09-15T16:38:14.975Z",
+  "environment": "demo-sakila",
+  "source": "health-check",
+  "severity": "critical",
+  "category": "query_latency",
+  "title": "P99 above 2 seconds for the monitored Sakila SELECT",
+  "summary": "The Luna Health Check agent identified P99 above 2 seconds in the HTML report.",
+  "findings": [
+    {
+      "check_id": "health-check-luna.select-latency.p99-gt-2s",
+      "metric": "p99_seconds",
+      "observed_value": 2.5,
+      "threshold": 2.0,
+      "unit": "seconds",
+      "evidence": {
+        "schema": "sakila",
+        "query_name": "actor_popularity",
+        "window_seconds": 120,
+        "executions": 525,
+        "samples": 525,
+        "percentile_coverage": 100.0,
+        "source_audit_id": "44444444-4444-4444-8444-444444444444",
+        "source_document": "select_latency/results/latest.html",
+        "digest": "97eb2e3ec6c2ecefc310ed0c449384c04c59dc149f6cb31ca75e95a9a7836fe5",
+        "normalized_select": "SELECT a.actor_id, a.first_name, a.last_name FROM actor AS a WHERE a.actor_id = ?"
+      },
+      "affected_objects": ["sakila.actor_popularity"]
+    }
+  ],
+  "dedupe_key": "sakila:actor_popularity:query_latency:p99_gt_2s",
+  "report": {
+    "json": {
+      "schema_version": "1.0",
+      "audit_id": "55555555-5555-4555-8555-555555555555",
+      "started_at": "2026-09-15T16:38:13.000Z",
+      "finished_at": "2026-09-15T16:38:13.975Z",
+      "collected_at": "2026-09-15T16:38:13.975Z",
+      "duration_ms": 975,
+      "target": {"engine": "MySQL", "service": "MySQL HeatWave"},
+      "scope": {"schemas": ["sakila"]},
+      "overall_status": "healthy",
+      "capabilities": {"statement_digests": "available"},
+      "instance": {},
+      "domains": {"connections": {"status": "healthy", "findings": []}},
+      "findings": [],
+      "data_retention": {
+        "mode": "latest_only",
+        "raw_query_text_persisted": false,
+        "raw_logs_persisted": false
+      }
+    },
+    "html": "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>General Health Report</title></head><body><p>Audit ID: 55555555-5555-4555-8555-555555555555</p><p>Collected at: 2026-09-15T16:38:13.975Z</p><h1>General Health Report</h1></body></html>",
+    "report_generated_at": "2026-09-15T16:38:13.975Z",
+    "report_format_version": "1.0"
+  },
+  "metadata": {
+    "example": true,
+    "decision_owner": "health-check-luna",
+    "decision_source_audit_id": "44444444-4444-4444-8444-444444444444",
+    "dba_report_source": "general_report/results/report.html"
+  }
+}

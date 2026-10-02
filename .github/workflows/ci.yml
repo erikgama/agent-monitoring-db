@@ -1,0 +1,21 @@
+name: Verify installation
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.22'
+      - name: Install from lockfiles
+        run: python3 scripts/bootstrap.py
+      - name: Tests and web build without database, SMTP or LLM
+        run: python3 scripts/check.py

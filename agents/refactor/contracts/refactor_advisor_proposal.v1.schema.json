@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "refactor_advisor_proposal.v1.schema.json",
+  "title": "Refactor Advisor Proposal v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "proposed_sql", "change_summary", "limitations"],
+  "properties": {
+    "contract_version": {
+      "type": "string",
+      "const": "refactor_advisor_proposal.v1"
+    },
+    "proposed_sql": {"type": "string", "minLength": 20, "maxLength": 20000},
+    "change_summary": {"type": "string", "minLength": 10, "maxLength": 1000},
+    "limitations": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {"type": "string", "minLength": 1, "maxLength": 500}
+    }
+  }
+}

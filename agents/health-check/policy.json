@@ -1,0 +1,8 @@
+{
+  "scope": {
+    "allowed_schemas": ["sakila"]
+  },
+  "collection": {
+    "query_timeout_seconds": 15
+  }
+}

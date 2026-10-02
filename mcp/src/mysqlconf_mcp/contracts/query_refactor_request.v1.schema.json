@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "query_refactor_request.v1.schema.json",
+  "title": "Query Refactor Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contract_version", "request_id", "created_at", "source", "query_id", "query_fingerprint", "dedupe_key", "schema", "catalog_source", "original_sql", "original_sql_sha256", "evidence", "report"],
+  "properties": {
+    "contract_version": {"const": "query_refactor_request.v1"},
+    "request_id": {"type": "string", "format": "uuid"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "source": {"const": "health-check"},
+    "query_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,63}$"},
+    "query_fingerprint": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "dedupe_key": {"type": "string", "pattern": "^sakila:[a-z0-9_]+:sha256:[0-9a-f]{64}$"},
+    "schema": {"const": "sakila"},
+    "catalog_source": {"const": "agents/health-check/refactor_collector/bad_queries_with_llm_refactor.sql"},
+    "original_sql": {"type": "string", "minLength": 20, "maxLength": 20000},
+    "original_sql_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["threshold_seconds", "max_query_time_seconds", "occurrences", "qualifying_occurrences", "rows_examined", "rows_sent"],
+      "properties": {
+        "threshold_seconds": {"const": 80.0},
+        "max_query_time_seconds": {"type": "number", "exclusiveMinimum": 80.0},
+        "occurrences": {"type": "integer", "minimum": 1},
+        "qualifying_occurrences": {"type": "integer", "minimum": 1},
+        "rows_examined": {"type": "integer", "minimum": 0},
+        "rows_sent": {"type": "integer", "minimum": 0}
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["snapshot_id", "collected_at", "json", "html"],
+      "properties": {
+        "snapshot_id": {"type": "string", "format": "uuid"},
+        "collected_at": {"type": "string", "format": "date-time"},
+        "json": {"type": "object"},
+        "html": {"type": "string", "minLength": 100}
+      }
+    }
+  }
+}

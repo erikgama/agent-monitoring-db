@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "audit_security_luna_decision.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision", "summary", "evidence_quality", "alerts"],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["alert", "no_alert", "inconclusive"]
+    },
+    "summary": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "evidence_quality": {
+      "type": "string",
+      "enum": ["sufficient", "partial", "insufficient"]
+    },
+    "alerts": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule_id", "event_key", "category", "severity", "title",
+          "summary", "metric", "evidence"
+        ],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "enum": [
+              "audit_security.sakila.blocked_destructive_ddl",
+              "audit_security.sakila.blocked_alter_table"
+            ]
+          },
+          "event_key": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+          "category": {
+            "type": "string",
+            "enum": ["destructive_ddl", "schema_change"]
+          },
+          "severity": {"type": "string", "const": "critical"},
+          "title": {"type": "string", "minLength": 1, "maxLength": 160},
+          "summary": {"type": "string", "minLength": 1, "maxLength": 1000},
+          "metric": {
+            "type": "string",
+            "enum": [
+              "blocked_destructive_ddl_attempt",
+              "blocked_schema_change_attempt"
+            ]
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "occurred_at_utc", "event_id", "event_key", "sql_command",
+              "outcome", "status_code", "schema_scope", "scope_evidence",
+              "sql_length"
+            ],
+            "properties": {
+              "occurred_at_utc": {"type": "string"},
+              "event_id": {"type": ["integer", "null"]},
+              "event_key": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+              "sql_command": {"type": "string"},
+              "outcome": {"type": "string"},
+              "status_code": {"type": ["integer", "null"]},
+              "schema_scope": {"type": "string"},
+              "scope_evidence": {"type": ["string", "null"]},
+              "sql_length": {"type": ["integer", "null"]}
+            }
+          }
+        }
+      }
+    }
+  }
+}

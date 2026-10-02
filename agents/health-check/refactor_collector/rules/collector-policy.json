@@ -1,0 +1,21 @@
+{
+  "schema_version": "slow_query_refactor_policy.v1",
+  "scope": {
+    "allowed_schemas": [
+      "sakila"
+    ]
+  },
+  "source": {
+    "schema": "mysql",
+    "table": "slow_log"
+  },
+  "collection": {
+    "lookback_minutes": 240,
+    "max_rows": 25
+  },
+  "retention": {
+    "mode": "latest_only",
+    "raw_query_text_persisted": false,
+    "raw_logs_persisted": false
+  }
+}
