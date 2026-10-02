@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "node start.mjs",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.check.json",
+    "typecheck": "next typegen && tsc --noEmit -p tsconfig.check.json",
     "format": "prettier --write src tests *.ts *.mjs *.json",
     "format:check": "prettier --check src tests *.ts *.mjs *.json",
     "test": "playwright test",

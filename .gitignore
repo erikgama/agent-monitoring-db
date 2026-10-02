@@ -43,6 +43,8 @@ dist/
 node_modules/
 .next/
 .next-e2e-*/
+.tsconfig-e2e-*.json
+next-env.d.ts
 playwright-report/
 test-results/
 *.tsbuildinfo

@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
   distDir: process.env.LAB_NEXT_DIST_DIR || ".next",
+  typescript: {
+    tsconfigPath: process.env.LAB_NEXT_TSCONFIG || "tsconfig.json",
+  },
   output: "standalone",
   outputFileTracingRoot: process.cwd(),
   turbopack: { root: process.cwd() },

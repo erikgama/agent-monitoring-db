@@ -45,6 +45,7 @@ def main() -> int:
     while api_port == web_port:
         web_port = free_port()
     build_directory = ".next-e2e-" + uuid.uuid4().hex
+    typescript_config = WEB / (".tsconfig-e2e-" + uuid.uuid4().hex + ".json")
     environment = dict(os.environ)
     for key in tuple(environment):
         if key.startswith(("MYSQL_", "SMTP_", "LAB_", "NOTIFICATION_", "MCP_")):
@@ -56,6 +57,7 @@ def main() -> int:
         LAB_API_URL=f"http://127.0.0.1:{api_port}",
         LAB_E2E_URL=origin,
         LAB_NEXT_DIST_DIR=build_directory,
+        LAB_NEXT_TSCONFIG=typescript_config.name,
         PORT=str(web_port),
         NEXT_TELEMETRY_DISABLED="1",
     )
@@ -65,6 +67,9 @@ def main() -> int:
         environment["LAB_RUNTIME"] = str(temporary / "runtime")
         with (temporary / "demo.log").open("w") as log:
             try:
+                # Next.js appends build-specific type paths. Give it a private
+                # config so tests never rewrite the developer's tsconfig.json.
+                typescript_config.write_bytes((WEB / "tsconfig.json").read_bytes())
                 # Compile the production bundle for this isolated API/port;
                 # development compilation can delay SSE/UI updates in CI.
                 build = subprocess.run(
@@ -125,6 +130,7 @@ def main() -> int:
                         os.killpg(process.pid, signal.SIGKILL)
                         process.wait(timeout=5)
                 shutil.rmtree(WEB / build_directory, ignore_errors=True)
+                typescript_config.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
