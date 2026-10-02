@@ -63,6 +63,16 @@ python3 scripts/e2e.py
 No Linux, o navegador pode precisar das bibliotecas do sistema indicadas pelo
 Playwright. O instalador do navegador não cadastra conexão MySQL.
 
+No Oracle Linux 9, as bibliotecas usadas na validação Chromium foram:
+
+```sh
+sudo dnf install -y atk at-spi2-atk alsa-lib cups-libs libXcomposite \
+  libXdamage libXrandr libxkbcommon mesa-libgbm pango cairo
+```
+
+Execute `check.py` e `e2e.py` sequencialmente, como acima; a compilação Web
+simultânea pode disputar CPU com os prazos da suíte de integração.
+
 ## 4. Confirmar o console demo
 
 ```sh
