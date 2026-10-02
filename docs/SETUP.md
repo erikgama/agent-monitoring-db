@@ -159,11 +159,17 @@ autorização específica.
 
 ```sh
 uv run --locked agent-monitoring doctor
+uv run --locked agent-monitoring db-check
+uv run --locked agent-monitoring db-check --role refactor
 ```
 
 Esperado: todos os itens necessários são `true`. Doctor verifica referências e
 binários; as coletas seguintes comprovam o acesso. Requisitos de privilégios e
 de serviço estão em [`CONNECTION.md`](CONNECTION.md).
+`db-check` verifica login, schema, porta e TLS numa transação somente leitura.
+O segundo comando exige o perfil Refactor e `sakila_dev`; pode ser executado
+depois que esse perfil estiver cadastrado. Saída esperada: `status=ok` e
+`read_only`, `tls` e `port_matches` iguais a `true`.
 
 ## 8. Verificar duas coletas reais somente leitura
 

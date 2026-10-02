@@ -62,7 +62,8 @@ separados. Veja permissões, TLS e as limitações de schema em
 
 **Verificação:** `uv run --locked agent-monitoring doctor` mostra os
 pré-requisitos e a existência do perfil, sem ler credenciais nem consultar o
-banco. A autenticação e as coletas reais são verificadas na etapa integrada.
+banco. `uv run --locked agent-monitoring db-check` verifica login, schema,
+porta e TLS numa transação somente leitura; deve devolver `status=ok`.
 
 ## 5. Escolher o LLM e conectar o MCP
 

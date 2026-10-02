@@ -3289,11 +3289,13 @@ p {
     font-size: 9px;
   }
 }
-@media (max-width: 1000px) {
+@media (max-width: 1200px) {
   .metric-strip {
     position: static;
     margin: 3px 20px 5px;
   }
+}
+@media (max-width: 1000px) {
   .main-grid {
     height: max(620px, calc(100vh - 220px));
   }
@@ -3421,7 +3423,7 @@ p {
     display: none;
   }
   .brand-name {
-    font-size: 18px;
+    font-size: 14px;
   }
   .topbar {
     height: 57px;

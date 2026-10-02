@@ -316,9 +316,14 @@ test("audit lifecycle, gated scenarios, stop and direct access after reload", as
 });
 
 test("HTML evidence blocks scripts and remote resources", async ({ page }) => {
-  const remote: string[] = [];
-  page.on("request", (request) => {
-    if (request.url().includes("evil.invalid")) remote.push(request.url());
+  const blocked: string[] = [];
+  const completed: string[] = [];
+  page.on("requestfailed", (request) => {
+    if (request.url().includes("evil.invalid"))
+      blocked.push(request.failure()?.errorText || "unknown");
+  });
+  page.on("requestfinished", (request) => {
+    if (request.url().includes("evil.invalid")) completed.push(request.url());
   });
   await page.route("**/api/artifacts/*/html?*", (route) =>
     route.fulfill({
@@ -335,7 +340,9 @@ test("HTML evidence blocks scripts and remote resources", async ({ page }) => {
   expect(
     await page.locator("body").getAttribute("data-compromised"),
   ).toBeNull();
-  expect(remote).toEqual([]);
+  // Chromium emits a request event even when CSP prevents network access.
+  await expect.poll(() => blocked).toEqual([expect.stringMatching(/csp/i)]);
+  expect(completed).toEqual([]);
 });
 
 test("unavailable reports remain explicit", async ({ page }) => {

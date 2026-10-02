@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from agent_monitoring.cli import database_check
 from agent_monitoring.config import (
     EXAMPLE_CONFIG,
     ConfigurationError,
@@ -75,6 +76,67 @@ def test_password_environment_override_is_removed(central):
     )
     assert "MYSQL_PWD" not in env
     assert env["MYSQL_TEST_LOGIN_FILE"] == str(database_settings("dba").login_file)
+
+
+def test_database_check_requires_a_profile_before_starting_mysql(central, monkeypatch):
+    central.write_text(
+        central.read_text().replace(
+            "~/.config/agent-monitoring/mylogin.cnf",
+            str(central.parent / "absent.cnf"),
+        )
+    )
+
+    def unexpected(*args, **kwargs):
+        pytest.fail("MySQL must not run without the approved profile")
+
+    monkeypatch.setattr("agent_monitoring.cli.subprocess.run", unexpected)
+    with pytest.raises(ConfigurationError, match="approved_login_file_not_found"):
+        database_check("health-check")
+
+
+@pytest.mark.parametrize(
+    "output,code,error",
+    [
+        ("3306\tsakila\n1\nSsl_cipher\tTLS_AES_256_GCM_SHA384\n", 0, None),
+        (
+            "3307\tsakila\n1\nSsl_cipher\tTLS_AES_256_GCM_SHA384\n",
+            0,
+            "database_target_mismatch",
+        ),
+        ("3306\tsakila\n1\nSsl_cipher\t\n", 0, "database_tls_not_active"),
+        ("private-output", 1, "database_check_failed"),
+    ],
+)
+def test_database_check_enforces_read_only_tls_and_target(
+    central, monkeypatch, capsys, output, code, error
+):
+    profile = central.parent / "stub.cnf"
+    profile.touch()
+    central.write_text(
+        central.read_text().replace(
+            "~/.config/agent-monitoring/mylogin.cnf",
+            str(profile),
+        )
+    )
+    monkeypatch.setattr("agent_monitoring.cli.shutil.which", lambda _: "/usr/bin/mysql")
+    monkeypatch.setenv("MYSQL_PWD", "synthetic-forbidden-value")
+
+    def complete(command, **kwargs):
+        assert command[1] == "--login-path=agent-monitoring"
+        assert "--ssl-mode=REQUIRED" in command
+        assert "START TRANSACTION READ ONLY;" in command[-1]
+        assert command[-1].endswith("ROLLBACK;")
+        assert kwargs["timeout"] == 15
+        assert "MYSQL_PWD" not in kwargs["env"]
+        return subprocess.CompletedProcess(command, code, output, "private-error")
+
+    monkeypatch.setattr("agent_monitoring.cli.subprocess.run", complete)
+    if error:
+        with pytest.raises(ConfigurationError, match=f"^{error}$"):
+            database_check("health-check")
+    else:
+        assert database_check("health-check") == 0
+        assert json.loads(capsys.readouterr().out)["tls"] is True
 
 
 def test_llm_commands_disable_tools_or_require_a_read_only_sandbox(central, tmp_path):

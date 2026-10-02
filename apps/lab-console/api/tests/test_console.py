@@ -6,6 +6,7 @@ import signal
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import psutil
 import pytest
@@ -810,6 +811,15 @@ def test_commands_and_environment(tmp_path, monkeypatch):
     assert "SMTP_PASSWORD" not in env and "LAB_RUNNER_KEY" not in env
     assert env["NOTIFICATION_DELIVERY_ENABLED"] == "false"
     assert str(tmp_path) in env["UV_CACHE_DIR"]
+
+
+def test_dba_read_commands_require_the_approved_login_reference(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "labconsole.runner.database_settings",
+        lambda _: SimpleNamespace(login_file=tmp_path / "absent-profile.cnf"),
+    )
+    with pytest.raises(ValueError, match="approved_login_file_not_found"):
+        command_for(tmp_path, "dba.actor_count", True)
 
 
 def test_refactor_worker_is_started_only_by_refactor_action():

@@ -332,7 +332,7 @@ export function Console() {
       <div className="workspace">
         <header className="topbar">
           <div className="brand-name">
-            mysql<span>conf</span>
+            agent<span>-monitoring-db</span>
             <span className="brand-divider" />
             <span className="topbar-label">Mission Control</span>
           </div>

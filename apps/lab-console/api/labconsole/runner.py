@@ -112,6 +112,8 @@ def command_for(repository: Path, action: str, execute: bool) -> tuple[list[str]
         if not execute:
             raise ValueError("query_requires_approval")
         settings = database_settings("dba")
+        if not settings.login_file.is_file():
+            raise ValueError("approved_login_file_not_found")
         profile = settings.login_path
         if not profile or not profile.replace("-", "").replace("_", "").isalnum():
             raise ValueError("readonly_login_path_required")

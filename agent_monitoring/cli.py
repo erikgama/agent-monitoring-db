@@ -133,6 +133,68 @@ def llm_check() -> int:
     return 0
 
 
+def database_check(role: str) -> int:
+    """Check the selected profile using one bounded read-only transaction."""
+    settings = database_settings(role)
+    if not settings.login_file.is_file():
+        raise ConfigurationError("approved_login_file_not_found")
+    executable = shutil.which(settings.mysql_binary)
+    if executable is None:
+        raise ConfigurationError("mysql_not_found")
+    sql = (
+        "START TRANSACTION READ ONLY; "
+        "SELECT @@port, DATABASE(); "
+        "SELECT 1 FROM information_schema.schemata WHERE schema_name=DATABASE(); "
+        "SHOW SESSION STATUS LIKE 'Ssl_cipher'; ROLLBACK;"
+    )
+    try:
+        completed = subprocess.run(
+            [
+                executable,
+                f"--login-path={settings.login_path}",
+                "--protocol=TCP",
+                *settings.tls_flags(),
+                f"--database={settings.database}",
+                "--connect-timeout=5",
+                "--batch",
+                "--skip-column-names",
+                "--execute",
+                sql,
+            ],
+            env=settings.environment(),
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise ConfigurationError("database_check_timeout") from error
+    if completed.returncode:
+        raise ConfigurationError("database_check_failed")
+    rows = completed.stdout.strip().splitlines()
+    if (
+        len(rows) != 3
+        or rows[0] != f"{settings.expected_port}\t{settings.database}"
+        or rows[1] != "1"
+    ):
+        raise ConfigurationError("database_target_mismatch")
+    if not rows[2].startswith("Ssl_cipher\t") or not rows[2].split("\t", 1)[1]:
+        raise ConfigurationError("database_tls_not_active")
+    print(
+        json.dumps(
+            {
+                "status": "ok",
+                "role": role,
+                "database": settings.database,
+                "read_only": True,
+                "tls": True,
+                "port_matches": True,
+            }
+        )
+    )
+    return 0
+
+
 def configure_database(args: argparse.Namespace) -> int:
     settings = database_settings(args.role)
     executable = shutil.which("mysql_config_editor")
@@ -172,6 +234,14 @@ def main() -> int:
         "llm-check",
         help="Faz uma pequena chamada real ao LLM configurado, sem acessar o banco",
     )
+    connection = commands.add_parser(
+        "db-check", help="Verifica conexão TLS e schema somente leitura"
+    )
+    connection.add_argument(
+        "--role",
+        choices=["health-check", "audit", "dba", "refactor", "workload", "audit-lab"],
+        default="health-check",
+    )
     clients = commands.add_parser(
         "configure-clients", help="Gera configurações locais MCP para este clone"
     )
@@ -200,6 +270,8 @@ def main() -> int:
             return doctor()
         elif args.command == "llm-check":
             return llm_check()
+        elif args.command == "db-check":
+            return database_check(args.role)
         else:
             return configure_database(args)
         return 0
