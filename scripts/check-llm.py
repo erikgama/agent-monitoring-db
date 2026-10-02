@@ -77,17 +77,56 @@ CHECKS = [
         assert result['contract_version'] == 'refactor_advisor_proposal.v1'
     """,
     ),
+    (
+        "dba-summary",
+        "apps/lab-console/api",
+        """
+        from pathlib import Path
+        from labconsole.incident_analysis import (
+            CodexAnalyzer, SUMMARY_MODEL, SUMMARY_REASONING_EFFORT,
+        )
+        root = Path.cwd().parents[2]
+        prompt = (root / 'agents/dba/analise-ocorrencia-health-check/prompt.md')
+        evidence = '\\n<DADOS>Synthetic fixture: sakila P99=2.29s, limit=2s.</DADOS>'
+        result = CodexAnalyzer(SUMMARY_MODEL, SUMMARY_REASONING_EFFORT).analyze(
+            prompt.read_text() + evidence,
+        )
+        assert result.strip()
+    """,
+    ),
+    (
+        "dba-chat",
+        "apps/lab-console/api",
+        """
+        from pathlib import Path
+        from labconsole.incident_analysis import (
+            CodexAnalyzer, CHAT_MODEL, CHAT_REASONING_EFFORT,
+        )
+        root = Path.cwd().parents[2]
+        prompt = (root / 'agents/dba/chat/prompt.md').read_text()
+        result = CodexAnalyzer(CHAT_MODEL, CHAT_REASONING_EFFORT).analyze(
+            prompt + '\\nSynthetic fixture: explain what P99 means in two sentences.',
+        )
+        assert result.strip()
+    """,
+    ),
 ]
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--execute", action="store_true", help="Authorize four real provider calls"
+        "--execute", action="store_true", help="Authorize six real provider calls"
+    )
+    parser.add_argument(
+        "--check",
+        action="append",
+        choices=[name for name, _, _ in CHECKS],
+        help="Run only the selected checks; repeat for multiple checks",
     )
     args = parser.parse_args()
     if not args.execute:
-        print("Use --execute para autorizar quatro chamadas reais ao LLM configurado.")
+        print("Use --execute para autorizar seis chamadas reais ao LLM configurado.")
         return 0
     environment = dict(os.environ)
     for key in tuple(environment):
@@ -110,6 +149,8 @@ def main() -> int:
     )
     failed = False
     for name, project, source in CHECKS:
+        if args.check and name not in args.check:
+            continue
         completed = subprocess.run(
             ["uv", "run", "--locked", "python", "-c", textwrap.dedent(source)],
             cwd=ROOT / project,
