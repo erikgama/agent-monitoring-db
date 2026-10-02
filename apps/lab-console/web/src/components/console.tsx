@@ -142,8 +142,11 @@ export function Console() {
   useEffect(() => {
     if (!user) return;
     const events = new EventSource("/api/events");
-    events.onmessage = () =>
+    events.onmessage = (message) => {
       queryClient.invalidateQueries({ queryKey: ["state"] });
+      if (JSON.parse(message.data).type === "artifact.available")
+        queryClient.invalidateQueries({ queryKey: ["artifacts"] });
+    };
     return () => events.close();
   }, [user, queryClient]);
   const fail = useCallback(

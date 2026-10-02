@@ -140,6 +140,17 @@ Esperado: launchers locais gerados e JSON com `"status": "ok"`. Uma nova
 localização do clone exige gerar launchers nessa localização. Consulte
 [`LLM_CLIENTS.md`](LLM_CLIENTS.md) para conferir a descoberta do MCP no cliente.
 
+Para verificar também os schemas e adapters reais dos quatro advisors:
+
+```sh
+python3 scripts/check-llm.py --execute
+```
+
+Esperado: quatro resultados `status=ok`. Consome quatro chamadas do provedor
+escolhido, com fixtures sintéticas; não consulta MySQL, publica contratos ou
+envia e-mail. A proposta Refactor é validada como proposta; equivalência e
+desempenho do SQL dependem da validação específica em `sakila_dev`.
+
 ## 7. Cadastrar os perfis do banco
 
 O banco deve estar preparado pelo DBA e alcançável da máquina. Em

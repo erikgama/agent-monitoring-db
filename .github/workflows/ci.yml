@@ -19,3 +19,8 @@ jobs:
         run: python3 scripts/bootstrap.py
       - name: Tests and web build without database, SMTP or LLM
         run: python3 scripts/check.py
+      - name: Install Chromium for demo browser checks
+        working-directory: apps/lab-console/web
+        run: npx playwright install --with-deps chromium
+      - name: Browser verification in isolated demo
+        run: python3 scripts/e2e.py
