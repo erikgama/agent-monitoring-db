@@ -65,6 +65,7 @@ DBA e exigem confirmação explícita.
 
 - `audit_security/collector.py`: coleta e mascaramento de fatos;
 - `audit_security/main.py`: coleta única ou contínua;
+- `audit_security/renderer.py`: HTML responsivo no padrão visual do relatório geral do Health Check;
 - `audit_security/advisor/agent.py`: decisão Luna e publicação no MCP;
 - `audit_security/advisor/rules.md`: regras naturais de DROP/ALTER bloqueados;
 - `audit_security/advisor/analysis.schema.json`: formato obrigatório da decisão;

@@ -11,12 +11,12 @@ from pathlib import Path
 from typing import Any
 
 from .artifacts import write_artifacts
-from .collector import BASE_DIR, QueryClient, collect_snapshot
+from .collector import AUDIT_REPORT_DIR, QueryClient, collect_snapshot
 from .mysql_cli import MysqlCli
 from .renderer import render_html
 
 INTERVAL_SECONDS = 15.0
-OUTPUT_DIRECTORY = BASE_DIR / "audit_security" / "results"
+OUTPUT_DIRECTORY = AUDIT_REPORT_DIR / "results"
 
 
 def collect_once(

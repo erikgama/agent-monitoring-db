@@ -11,8 +11,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-BASE_DIR = Path(__file__).resolve().parents[1]
-SQL_DIR = BASE_DIR / "audit_security" / "sql" / "security_snapshot"
+AUDIT_REPORT_DIR = Path(__file__).resolve().parent
+BASE_DIR = AUDIT_REPORT_DIR.parent
+SQL_DIR = AUDIT_REPORT_DIR / "sql" / "security_snapshot"
 
 STATIC_QUERIES = {
     "instance_security": "00_instance_security.sql",
