@@ -54,11 +54,35 @@ Sucesso de instalação/coleta não significa que o banco esteja saudável.
 Os resultados operacionais reais permanecem nos `results/` de seus agentes,
 ignorados pelo Git.
 
-**Na VM, as coletas reais MySQL permanecem pendentes.** O perfil não foi
-encontrado nos caminhos padrão `~/.mylogin.cnf` e
-`~/.config/agent-monitoring/mylogin.cnf`. É necessário cadastrar o perfil na
-própria VM ou indicar seu caminho e nome no TOML central. Depois, executar
-`doctor`, `db-check` e as duas coletas da etapa 8 de `SETUP.md`.
+**A validação MySQL real na VM foi concluída em 2 de outubro de 2026.** Os
+perfis de monitoramento e Refactor foram cadastrados pelo prompt do cliente
+MySQL, fora do clone. O arquivo de login local possui permissões `0600`;
+o TOML contém somente sua referência. Host, usuário e senha não foram
+incluídos neste relatório ou no Git.
+
+| Verificação na VM | Resultado |
+| --- | --- |
+| `agent-monitoring doctor` | Todas as referências e dependências necessárias disponíveis |
+| `agent-monitoring db-check` | Login, `sakila`, porta e TLS confirmados; transação somente leitura |
+| `agent-monitoring db-check --role refactor` | Login, `sakila_dev`, porta e TLS confirmados; transação somente leitura |
+| Health Check `collect` | Relatório real coletado às `12:17:03.074Z`; estado `critical` no domínio de erros |
+| Audit `collect` | Coleta real às `12:17:03.379Z`, `complete`; todos os dez domínios disponíveis |
+| `mysql-health-latency collect` | Fontes disponíveis; nenhuma execução do digest monitorado na janela observada |
+| `mysql-health-refactor-collector` | Coleta `healthy`, sem queries candidatas retornadas |
+| Advisors Health Check e Audit | Codex interpretou os HTMLs reais e devolveu `no_alert`; schema validado, sem publicação |
+| DBA `actor_count` e `film_count` | As duas consultas SELECT oficiais passaram usando o perfil central |
+| Integridade do clone | Git limpo após configurar perfis, coletar e testar |
+
+O achado Health Check `errors.accumulated` usa contadores desde o último
+reset/restart; não demonstra taxa atual de erros. O `no_alert` do advisor
+Health Check se refere à regra de latência do digest monitorado, não ao estado
+geral do banco. Sem candidatas no Slow Query Log, esta etapa não comprova
+equivalência ou desempenho de uma refatoração real.
+
+Os JSON/HTML e registros dos dois checks LLM reais permanecem nos `results/`
+dos próprios agentes, ignorados pelo Git. As contagens DBA foram verificadas
+sem publicar os valores retornados. Para repetir, siga as etapas 7 e 8 de
+`SETUP.md` com seus próprios perfis locais.
 
 O bootstrap não provisiona schemas, contas ou privilégios. DDL, DML, cargas
 deliberadas e e-mail real não foram executados; os testes correspondentes usam
