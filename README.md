@@ -11,6 +11,10 @@ repositório. A configuração de cada máquina fica em um único arquivo:
 cliente MySQL, fora do Git. Coletores, advisors, DBA, Refactor e os executores do
 console usam o mesmo resolvedor de configuração.
 
+Instalação e testes executados em Oracle Linux 9, a partir de um clone novo:
+[`registro da validação`](docs/VALIDATION_VM.md), com resultados e pendências
+de autenticação/conexão separados.
+
 ## 1. Pré-requisitos
 
 Linux ou macOS (Windows via WSL2), Git, Python para iniciar o bootstrap, `uv`,
