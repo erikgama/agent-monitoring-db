@@ -6,14 +6,16 @@ leitura; Refactor valida queries conhecidas em laboratório; Notification entreg
 alertas já validados.
 
 O código, as regras, os testes e os scripts do laboratório estão neste
-repositório. A configuração de cada máquina fica em um único arquivo:
-**`config/agent-monitoring.toml`**. Senhas pertencem ao perfil local do
-cliente MySQL, fora do Git. Coletores, advisors, DBA, Refactor e os executores do
-console usam o mesmo resolvedor de configuração.
+repositório. As referências de banco e a escolha do LLM ficam em um único
+arquivo por máquina: **`config/agent-monitoring.toml`**. As credenciais MySQL
+ficam no perfil local do cliente, fora do Git. Coletores, advisors, DBA,
+Refactor e os executores do console usam o mesmo resolvedor. O login do LLM,
+os launchers MCP e a configuração opcional de e-mail também são locais;
+[`docs/SETUP.md`](docs/SETUP.md) mostra onde configurar cada um.
 
 Instalação e testes executados em Oracle Linux 9, a partir de um clone novo:
-[`registro da validação`](docs/VALIDATION_VM.md), com resultados e pendências
-de autenticação/conexão separados.
+[`registro da validação`](docs/VALIDATION_VM.md). Os testes sem banco usam
+fixtures; login LLM, conexão MySQL e entrega SMTP têm verificações próprias.
 
 ## 1. Pré-requisitos
 

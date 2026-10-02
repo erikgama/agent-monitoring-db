@@ -22,9 +22,25 @@ uv --version
 ```
 
 Esperado: todos os comandos respondem; Node deve ser 22.19 ou superior. As
-dependências Python serão instaladas pelo `uv`. O cliente Oracle MySQL deve
-oferecer `mysql --version`, `mysql_config_editor` e `--ssl-mode`. MariaDB CLI
-não é substituto automático para essas opções.
+dependências Python serão instaladas pelo `uv`. Ao abrir outra sessão SSH,
+confirme que `uv` continua no `PATH`; se necessário, configure o diretório
+`$HOME/.local/bin` no perfil do seu shell.
+
+Instale também **somente o cliente Oracle MySQL** aprovado pela organização,
+com `mysql` e `mysql_config_editor`. Para Oracle Linux 9, a [documentação
+oficial dos pacotes RPM](https://dev.mysql.com/doc/refman/8.4/en/linux-installation-rpm.html)
+descreve os pacotes de cliente e a [documentação do repositório MySQL
+Yum](https://dev.mysql.com/doc/refman/8.4/en/linux-installation-yum-repo.html)
+explica como habilitar a fonte de pacotes. Não é preciso instalar um servidor
+MySQL nesta máquina. Confirme antes de cadastrar perfis:
+
+```sh
+mysql --version
+command -v mysql_config_editor
+mysql --help | grep -- '--ssl-mode'
+```
+
+MariaDB CLI não é substituto automático para essas opções.
 
 No macOS, instale Git, `uv`, Node.js 22 e o cliente MySQL pelo gerenciador de
 pacotes utilizado pela sua organização. No Linux de outras distribuições,
@@ -47,6 +63,8 @@ python3 scripts/bootstrap.py
 Esperado: nove ambientes Python, dependências Web instaladas com `npm ci` e
 configuração central criada. Os lockfiles ficam versionados. Para um servidor
 sem Web, use `--skip-web`. O comando pode ser repetido sem sobrescrever o TOML.
+Se o clone falhar com `Repository not found` ou erro de autenticação, confirme
+o acesso de leitura da conta GitHub e a autenticação HTTPS antes de prosseguir.
 
 ## 3. Verificar instalação sem dependências externas
 
@@ -55,7 +73,8 @@ python3 scripts/check.py
 ```
 
 Esperado: testes Python de todos os papéis, MCP e API passam; lint, tipos e
-build Web terminam com sucesso. Nenhum banco, SMTP ou LLM real é chamado.
+build Web terminam com sucesso. Nenhum banco, SMTP ou LLM real é chamado. Esse
+resultado confirma o clone e as dependências, não o acesso à sua instância.
 
 Os testes de navegador também usam demo e um runtime temporário vazio:
 
