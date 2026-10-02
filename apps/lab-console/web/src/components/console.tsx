@@ -209,7 +209,10 @@ export function Console() {
     const payload = {
       ...confirm,
       confirmation: typed,
-      request_id: crypto.randomUUID(),
+      request_id: Array.from(
+        crypto.getRandomValues(new Uint8Array(16)),
+        (byte) => byte.toString(16).padStart(2, "0"),
+      ).join(""),
     };
     try {
       await api(
