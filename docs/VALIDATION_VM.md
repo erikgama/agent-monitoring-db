@@ -166,3 +166,24 @@ preparados para publicação.
 
 Para repetir toda a instalação e comparar resultados, siga
 [`SETUP.md`](SETUP.md), etapa por etapa. Cada etapa descreve a saída esperada.
+
+## Revisão dos arquivos publicados e do painel público
+
+Uma revisão posterior percorreu todo o histórico Git com Gitleaks, sem detectar
+segredos. Nenhum perfil MySQL, configuração local, resultado operacional ou
+arquivo `DATABASE_ACCESS.md` aparece no histórico publicado. Os endereços de
+e-mail versionados usam apenas domínios de exemplo; os endereços IP fora de
+loopback aparecem somente em fixtures de teste privadas/reservadas.
+
+Foi encontrada uma rota do modo demo que ainda listava entregas reais do
+Refactor, incluindo SQL de laboratório, a partir dos resultados locais da VM.
+O painel público foi interrompido durante a correção. O modo demo agora devolve
+lista vazia para essa rota, e a fábrica pública bloqueia toda a navegação pelos
+arquivos do clone. Pela porta Web pública, foram confirmados `mode=demo`, zero
+entregas reais e resposta 404 para os recursos de código. A API permanece
+somente em loopback. Não havia logs de acesso disponíveis para determinar se a
+rota antiga foi consultada por terceiros.
+
+Na VM, os dois arquivos locais de configuração foram restringidos a `0600` e os
+diretórios de resultados operacionais e seus arquivos a `0700`/`0600`. O serviço
+integrado de teste permanece encerrado; o serviço público demo está ativo.

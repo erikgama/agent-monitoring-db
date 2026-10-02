@@ -937,6 +937,8 @@ def create_app(
     async def dba_refactor_deliveries(
         user: dict[str, Any] = Depends(session),
     ) -> list[dict[str, Any]]:
+        if control.mode != "integrated":
+            return []
         return await asyncio.to_thread(refactor_deliveries.list)
 
     @app.delete("/api/dba/refactor-deliveries/{delivery_id}")

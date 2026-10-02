@@ -15,6 +15,8 @@ from fastapi.testclient import TestClient
 from labconsole.app import create_app
 from labconsole.artifacts import Catalog, safe_read
 from labconsole.models import ACTIONS
+from labconsole.public_demo import create_public_demo
+from labconsole.refactor_deliveries import RefactorDeliveries
 from labconsole.runner import (
     ProcessTree,
     Runner,
@@ -171,6 +173,32 @@ def test_auth_csrf_origin(client):
     )
     assert client.post("/api/logout", headers=headers).status_code == 200
     assert client.get("/api/state").status_code == 401
+
+
+def test_public_demo_hides_repository_and_real_refactor_results(client, tmp_path):
+    repository = tmp_path / "repository"
+    report = repository / "agents/refactor/query_refactor/advisor/results/job/report.md"
+    report.write_text(
+        "# Handoff: Laboratory query\n"
+        "- Origem: Refactor\n"
+        "- Destino: DBA\n"
+        "- ID: `request-test`\n"
+        "- Original literal: `query_refactor/advisor/results/job/original.sql`\n"
+        "- Proposta canônica: `query_refactor/advisor/results/job/proposed.sql`\n"
+        "- Tempo: original `1.0 s`, proposta `0.1 s`\n",
+        encoding="utf-8",
+    )
+    assert len(RefactorDeliveries(repository).list()) == 1
+
+    login(client)
+    assert client.get("/api/dba/refactor-deliveries").json() == []
+
+    with TestClient(create_public_demo()) as public:
+        assert public.post("/api/access", headers=ORIGIN).status_code == 200
+        assert public.get("/api/health").json() == {"status": "ok", "mode": "demo"}
+        assert public.get("/api/dba/refactor-deliveries").json() == []
+        assert public.get("/api/resources/health-check/scripts").status_code == 404
+        assert public.get("/api/resources/health-check/skill").status_code == 404
 
 
 def test_viewer_cannot_start_stop_or_propose(client):

@@ -96,6 +96,12 @@ Abra `http://localhost:3000`. Se sua organização usa uma chave SSH, forneça
 seu caminho com `-i`; ela permanece fora do repositório. Não exponha as portas
 do console no firewall: o acesso integrado é restrito a loopback.
 
+Se precisar publicar uma demonstração, use a fábrica de API
+`labconsole.public_demo:create_public_demo`, mantenha a API em loopback e
+publique somente a Web. Essa fábrica bloqueia a navegação pelos arquivos do
+clone; no modo demo, as entregas reais do Refactor ficam indisponíveis. Não
+publique o modo integrado sem uma camada própria de autenticação e isolamento.
+
 ## 5. Instalar e autenticar o LLM escolhido
 
 Com Node.js preparado, uma instalação npm por usuário:
