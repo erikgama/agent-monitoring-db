@@ -1,7 +1,7 @@
 # Validação de instalação e portabilidade
 
 Executada em **2 de outubro de 2026**, a partir de um clone do GitHub.
-Código validado: [`53c89c0`](https://github.com/erikgama/agent-monitoring-db/commit/53c89c0).
+Código validado: [`610be18`](https://github.com/erikgama/agent-monitoring-db/commit/610be18).
 O repositório foi publicado como privado; quem clonar precisa de acesso ao GitHub.
 
 ## VM: Oracle Linux 9
@@ -32,10 +32,15 @@ layout em tablet, acessibilidade e bloqueio de scripts/recursos externos por
 sandbox e CSP. Chromium em Oracle Linux usa o build de compatibilidade do
 Playwright; as bibliotecas necessárias estão em `SETUP.md`.
 
+A suíte reduz o tempo simulado do modo demo e permite dez segundos por
+asserção assíncrona, considerando a atualização alternativa da tela a cada
+três segundos. Cada cenário confirma modo demo e encerra jobs simulados que
+possam ter sobrado do cenário anterior. O ritmo do console normal não mudou.
+
 ## GitHub Actions
 
 O mesmo bootstrap, `check.py` e os sete cenários de navegador passaram no CI:
-[execução validada](https://github.com/erikgama/agent-monitoring-db/actions/runs/36964791652).
+[execução validada](https://github.com/erikgama/agent-monitoring-db/actions/runs/37007295426).
 O workflow é `.github/workflows/ci.yml` e roda em cada push/PR, sem banco,
 SMTP ou autenticação LLM reais.
 
@@ -71,6 +76,7 @@ incluídos neste relatório ou no Git.
 | `mysql-health-refactor-collector` | Coleta `healthy`, sem queries candidatas retornadas |
 | Advisors Health Check e Audit | Codex interpretou os HTMLs reais e devolveu `no_alert`; schema validado, sem publicação |
 | DBA `actor_count` e `film_count` | As duas consultas SELECT oficiais passaram usando o perfil central |
+| API integrada e runner | Conexão real confirmada em runtime temporário; execução desabilitada e nenhum job iniciado |
 | Integridade do clone | Git limpo após configurar perfis, coletar e testar |
 
 O achado Health Check `errors.accumulated` usa contadores desde o último
