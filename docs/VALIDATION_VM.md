@@ -238,3 +238,48 @@ Essa prova confirma o roteamento MCP, SMTP e recebimento na caixa testada.
 Para operação automática contínua após o teste, a VM ainda precisa de um
 helper persistente ligado ao gerenciador de segredos corporativo e da opção
 `AGENT_MONITORING_NOTIFY=true` no processo integrado.
+
+## Setup SMTP para clones e nova execução integrada em 3 de outubro
+
+O commit [`bfaf13f`](https://github.com/erikgama/agent-monitoring-db/commit/bfaf13f)
+adicionou `scripts/smtp_setup.py` com `init`, `check` e `send-test --send`, e
+documentou o uso em `README.md`, `SETUP.md` e no guia Notification. O arquivo
+local preserva permissão `0600`; o script não armazena nem imprime a senha.
+`check` não consulta o segredo nem abre SMTP. `send-test --send` usa o próprio
+runtime Notification e requer envio explícito.
+
+Na máquina macOS, `check` identificou o Chaves e `send-test --send` devolveu
+`sent`, `delivered=true` e dois destinatários. A mensagem chegou à caixa
+Oracle às **15:59:51Z**. Na VM Linux, após `git pull --ff-only`, `check`
+identificou o helper temporário e o mesmo comando devolveu `sent`,
+`delivered=true` para dois destinatários; a mensagem chegou às **16:09:22Z**.
+O helper apenas mediou o segredo em memória durante a sessão de teste. Cada
+instalação Linux ainda precisa ligar o helper ao seu gerenciador corporativo
+para entrega permanente.
+
+Pelo navegador da VM, o console mostrou **INTEGRADO** e **Runner conectado**.
+Health Check, Audit e Refactor foram ativados com a confirmação `sakila`;
+`Iniciar consultas` foi acionado pelo botão da interface, sem `dry_run`.
+Depois do aquecimento de um minuto, a carga de SELECTs e a query versionada
+alimentaram as coletas reais. Durante a execução, a interface mostrou **cinco
+entregas SMTP confirmadas**, nenhum erro de entrega e nove evidências no DBA.
+Cinco alertas de latência chegaram à caixa Oracle entre **16:07:32Z** e
+**16:16:20Z**. Audit permaneceu em observação; não houve DROP ou ALTER.
+
+O coletor identificou `correlated_running_total` no Slow Query Log com
+**389 segundos**, acima do limiar estrito de 80 segundos. A triagem devolveu
+`no_candidate` porque o estado operacional da própria VM já registrava o envio
+da mesma impressão digital em **00:23:25Z**. A deduplicação impediu um novo
+pedido e, por consequência, não houve uma nova execução ou novo e-mail do
+Refactor nesta rodada. A validação anterior do fluxo completo Refactor está
+descrita na seção de 2 de outubro; os três contratos fictícios enviados via
+MCP nesta data foram testados separadamente da carga real.
+
+`Cancelar consultas` encerrou a simulação pela interface. Os três agentes
+foram parados e o painel ficou com **0/6 componentes ativos**. Uma SELECT de
+verificação em `performance_schema.threads`, excluindo a própria conexão,
+retornou **zero sessões ativas em `sakila`**. A sessão integrada foi encerrada;
+as portas 3000 e 8000 deixaram de escutar, a referência ao helper temporário
+foi removida, o arquivo SMTP local manteve `0600` e o clone da VM permaneceu
+limpo em `bfaf13f`. O CI desse commit passou em
+[GitHub Actions](https://github.com/erikgama/agent-monitoring-db/actions/runs/37135653253).
