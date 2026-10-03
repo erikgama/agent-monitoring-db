@@ -37,7 +37,7 @@ para detalhes da autenticação.
 
 O teste de latência utiliza três processos independentes. Inicie os terminais
 na ordem abaixo e mantenha os dois primeiros abertos durante toda a execução da
-carga. O MCP central não exige um quarto terminal: o agente Luna o inicia
+carga. O MCP central não exige um quarto terminal: o advisor o inicia
 automaticamente por `stdio` quando decide publicar um alerta.
 
 ### Terminal 1 — coletor de evidência
@@ -55,7 +55,7 @@ iniciar a carga. Para testar envio real, não altere destinatários ou SMTP no
 Health Check: use o procedimento controlado da seção
 “Integração MCP e entrega” deste README.
 
-### Terminal 2 — agente Luna
+### Terminal 2 — advisor
 
 ```sh
 cd "${AGENT_MONITORING_ROOT}/agents/health-check"
@@ -69,7 +69,7 @@ NOTIFICATION_EMAIL_RECIPIENTS_CRITICAL=critical-operator@example.invalid \
 uv run mysql-health-advisor --interval-seconds 15
 ```
 
-Espere `waiting_for_new_collection`. O Luna lê o HTML, decide e, somente em
+Espere `waiting_for_new_collection`. O LLM configurado lê o HTML, decide e, somente em
 `alert`, aciona o MCP. O intervalo padrão é de 15 segundos.
 
 ### Terminal 3 — carga controlada do DBA
@@ -104,13 +104,13 @@ python3 agents/dba/load-tests/sakila-read-only/sakila_read_demo_35.py \
 Esse é o único processo que gera a carga deliberada. Ao terminar, interrompa
 os Terminais 1 e 2 com `Ctrl-C`. Os relatórios do monitor ficam em
 `select_latency/results/`; a decisão do agente fica em
-`advisor/results/`. Quando o Luna decidir pelo alerta, o resultado do
+`advisor/results/`. Quando o LLM decidir pelo alerta, o resultado do
 Terminal 2 diferencia a aceitação pelo MCP, a entrega do Notification e o
 registro na inbox do DBA.
 
 ## Monitor de latência da query `actor_popularity` em janela de 30 segundos
 
-O coletor abaixo mantém seu relatório separado para leitura pelo agente Luna:
+O coletor abaixo mantém seu relatório separado para leitura pelo advisor:
 
 ```sh
 uv run mysql-health-latency monitor
@@ -123,7 +123,7 @@ snapshot dos contadores e histogramas do Performance Schema a cada 7 segundos.
 Enquanto não há execução nova da query, ele permanece em
 `waiting_for_activity` e não inicia uma janela artificial. A primeira execução
 nova abre uma sessão de atividade. Ao completar a janela mínima de 30 segundos,
-o relatório já fica disponível para o Luna; não existem mais fases de
+o relatório já fica disponível para o advisor; não existem mais fases de
 60 ou 120 segundos. Depois disso, o monitor reutiliza os snapshots mais próximos
 desse limite e substitui `select_latency/results/latest.json` e `latest.html`
 a cada 7 segundos. Como 30 não é divisível por 7, o primeiro relatório ocorre
@@ -164,13 +164,13 @@ A regra de decisão fica em `advisor/rules.md`. O coletor não lê essa regra, n
 compara o P99 com threshold e não chama o MCP. Ele apenas substitui
 `select_latency/results/latest.json` e `latest.html` com evidências da janela.
 
-O agente Luna lê o HTML completo. P99 estritamente maior que `2.0` segundos
+O LLM configurado lê o HTML completo. P99 estritamente maior que `2.0` segundos
 gera a decisão `alert`; exatamente `2.0` segundos ou menos gera `no_alert`.
 Relatório sem P99 válido ou inconsistente gera `inconclusive`. O schema em
-`advisor/analysis.schema.json` obriga o Luna a devolver a decisão, o valor
+`advisor/analysis.schema.json` obriga o LLM a devolver a decisão, o valor
 observado, o threshold de `2.0` segundos e a qualidade da evidência.
 
-Somente uma decisão `alert` do Luna forma um finding. Nesse momento, o agente
+Somente uma decisão `alert` do LLM forma um finding. Nesse momento, o advisor
 executa a coleta geral somente leitura e gera `health_check_alert.v1` com
 `general_report/results/report.json` e `report.html` para o DBA. O audit ID da
 coleta de latência fica registrado como origem da decisão. Depois, o agente usa
@@ -235,24 +235,24 @@ que cria a conexão.
 `read_latest_snapshot()` lê e valida apenas o cache local. Ele não recebe
 conexão e não possui caminho de código que consulte o MySQL.
 
-## Agente Luna
+## Advisor com LLM configurado
 
 O processo contínuo abaixo verifica se existe um novo HTML de latência e, quando
-o `audit_id` muda, pede ao modelo `gpt-5.6-luna`, com reasoning `low`, uma
-decisão estruturada:
+o `audit_id` muda, pede ao provedor e modelo selecionados em
+`config/agent-monitoring.toml` uma decisão estruturada:
 
 ```sh
 uv run mysql-health-advisor
 ```
 
-Ele usa o `codex exec` já autenticado na máquina, em modo `read-only` e
-`ephemeral`. O agente recebe o HTML completo e `advisor/rules.md`; ele é a única
-camada que decide o alerta. Quando decide `alert`, o processo do Luna valida o
+O adapter central inicia o cliente autenticado para o provedor configurado.
+O LLM recebe o HTML completo e `advisor/rules.md`; ele é a única camada que
+decide o alerta. Quando decide `alert`, o processo do advisor valida o
 contrato e chama `incident_raise` no MCP. O MCP registra JSON e HTML completos
 para o DBA e somente depois solicita a entrega por e-mail ao Notification. A última decisão fica
 em `advisor/results/latest.json`. `Ctrl-C` encerra o processo.
 
-O intervalo padrão do Luna é 15 segundos, igual ao usado pelo laboratório do
+O intervalo padrão do advisor é 15 segundos, igual ao usado pelo laboratório do
 app. Uma substituição explícita continua disponível para diagnóstico, sem
 alterar o polling de 7 segundos do coletor:
 
@@ -276,7 +276,7 @@ identificador lógico seguro, nunca host ou endpoint.
 ```text
 coleta MySQL
   -> JSON e HTML do mesmo audit_id
-  -> Luna lê o HTML e advisor/rules.md
+  -> LLM configurado lê o HTML e advisor/rules.md
   -> decisão do agente e finding explicável
   -> health_check_alert.v1 validado localmente
   -> MCP stdio incident_raise
@@ -376,7 +376,7 @@ anterior.
 
 O contrato de entrega está em
 [`alert-contract.md`](../alerts/alert-contract.md), com JSON Schema,
-validações de integridade e um exemplo do alerta da Luna. O publicador
+validações de integridade e um exemplo do alerta do advisor. O publicador
 `McpIncidentPublisher` valida novamente o envelope, resolve com segurança a
 raiz do repositório, descobre `incident_raise` e envia `{ "alert": payload }`
 como objeto pelo SDK MCP. JSON e HTML completos nunca são impressos em logs.

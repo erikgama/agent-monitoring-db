@@ -6,7 +6,7 @@ O runner tem privilégios para chamar os scripts oficiais na máquina do DBA. Tr
 
 Use um único worker da API: sessões, nonces, locks e socket são mantidos em memória. PostgreSQL torna metadados persistentes, mas não transforma esta versão num cluster distribuído. Reinício exige recarregar a página e reconciliar jobs; não configure autoscaling horizontal sem externalizar esses estados. Em 17/09/2026, o DBA autorizou retirar login e senha de aprovação do acesso local. Todos os visitantes locais operam como `local-dba`; não há atribuição individual de identidade. O integrado aceita apenas origem loopback e requests HTTP locais, inclusive Host/Forwarded-Host local. Mantenha API e Web em 127.0.0.1, sem proxy público ou túnel.
 
-Tokens de sessão aleatórios são guardados como digest no servidor e cookie HttpOnly/SameSite Strict no navegador. O endpoint POST `/api/access` abre/renova automaticamente a sessão sem senha; isso não autentica uma pessoa. CSRF e Origin continuam obrigatórios para mutações. Rate limit permanece ativo; não há token no localStorage. A chave do runner continua obrigatória e distinta das credenciais do banco. Senha SMTP só é resolvida pelo Notification via Chaves; credenciais do login-path não são lidas pelo app.
+Tokens de sessão aleatórios são guardados como digest no servidor e cookie HttpOnly/SameSite Strict no navegador. O endpoint POST `/api/access` abre/renova automaticamente a sessão sem senha; isso não autentica uma pessoa. CSRF e Origin continuam obrigatórios para mutações. Rate limit permanece ativo; não há token no localStorage. A chave do runner continua obrigatória e distinta das credenciais do banco. Senha SMTP só é resolvida pelo Notification via Chaves do macOS ou helper corporativo no Linux; credenciais do login-path não são lidas pelo app.
 
 O catálogo e eventos usam restrições complementares: roots/nomes fixos, leitura sem symlink, limite de tamanho, identidade audit_id/timestamp, filtro de conteúdo sensível e CSP. O runtime do runner cria `UV_CACHE_DIR` próprio. Logs brutos dos scripts não são enviados: somente campos reconhecidos e allowlisted. Campos desconhecidos são descartados, não mostrados numa aba de “log bruto”.
 
@@ -24,7 +24,7 @@ O catálogo e eventos usam restrições complementares: roots/nomes fixos, leitu
 | DROP/ALTER durante SELECT lenta | As duas ações podem permanecer em execução enquanto o MySQL conclui a tentativa. Cada conexão tem limite de 15 segundos; uma tentativa já conectada tem até 300 segundos e nunca é repetida automaticamente. |
 | SMTP falha | Evento de falha quando reportado pelo executor; sem retry implementado pelo app. Gates/recorrência internos continuam responsabilidade dos agentes. |
 | HTML substituído/ausente | Mostrar indisponível/não retido. Não copiar latest atual como histórico do alerta. |
-| Cache global uv/npm sem permissão | Usar caches isolados dos comandos do README; não corrigir com chmod/chown global nem apagar caches de terceiros. |
+| Cache global uv/npm sem permissão | Configurar diretórios de cache próprios e graváveis para `uv`/npm; não corrigir com chmod/chown global nem apagar caches de terceiros. |
 
 O watchdog reduz risco de órfãos, mas nenhuma rotina userspace garante cleanup sob perda do sistema operacional, SIGKILL de todos os processos ou falhas extremas entre fork e descoberta do descendente. Nesses casos, o DBA deve conferir os processos oficiais antes de religar. O app não mata processos que não criou e não adota sessões manuais preexistentes.
 
@@ -53,10 +53,10 @@ Para repetir de forma controlada:
 
 ## Decisões da primeira versão
 
-- A Central de ocorrências usa `gpt-5.6-luna` apenas para resumir os arquivos
+- A Central de ocorrências usa o provedor LLM configurado apenas para resumir os arquivos
   já preservados pelo DBA. O resumo não investiga causa, não recomenda ações ou
   melhorias e não acessa o banco. Dados sensíveis são mascarados em memória
-  antes da leitura pelo Luna ou da exibição no navegador.
+  antes da leitura pelo modelo ou da exibição no navegador.
 - O resumo é iniciado automaticamente somente quando uma nova ocorrência entra
   na inbox com a API integrada ativa. Abrir itens históricos apenas lê arquivos
   e não dispara o modelo.
@@ -66,7 +66,7 @@ Para repetir de forma controlada:
   Notification uma única tentativa de aviso sem SQL literal. Nada é enviado
   para produção.
 - O filtro de artefatos pode ocultar um relatório legítimo se ele contiver IP, e-mail ou outro indicador sensível. Isso aparece como indisponibilidade, não autorização para relaxar o contrato. A política de publicação deve ser decidida separadamente.
-- A regra exibida para Health Check é o `rules.md` lido pela Luna para decidir o alerta P99; thresholds do relatório geral e cooldown não são expostos nesse botão.
+- A regra exibida para Health Check é o `rules.md` lido pelo provedor LLM configurado para decidir o alerta P99; thresholds do relatório geral e cooldown não são expostos nesse botão.
 - A UI não solicita senha. Sessões de acesso local são renovadas automaticamente; se houver erro após queda ou expiração, recarregue a página. Propostas continuam expirando em cinco minutos e exigindo confirmação digitada.
 - Biblioteca filtra por origem e busca textual de categoria/data; não oferece paginação remota ou seletor avançado de intervalos nesta versão.
 - O projeto foi isolado em `apps/lab-console/`. Nenhum arquivo de implementação dos agentes foi substituído.
@@ -75,4 +75,4 @@ Para repetir de forma controlada:
 
 Comece pelo [README principal](../README.md), especialmente “Retomar sem o histórico da conversa”, e pelos três documentos de `docs/`, depois consulte o prompt original na raiz. O README inclui mapa do código, configuração, estado entregue e texto pronto para a próxima sessão. Confira os processos da demo antes de iniciar outra instância na porta 3000/8000. Não confunda resultados fictícios com validação MySQL/SMTP. Não rode os scripts reais ao tentar reproduzir a suíte: os testes de integração constroem um repositório temporário com fakes.
 
-Próximo gate operacional: repetir DROP e ALTER pelo app integrado e registrar suas duas rotas completas. Docker/Compose + PostgreSQL permanecem sem validação se essa implantação for escolhida. Domínio/provedor e TLS só entram após nova decisão de controle de acesso: a instalação integrada atual sem login não deve ser publicada. A execução Health/SELECTs e suas verificações estão registradas em `VALIDACAO.md`.
+As rotas integradas de DROP e ALTER foram validadas em 23/09/2026; consulte `VALIDACAO.md` para a evidência e `../../docs/VALIDATION_VM.md` para a instalação no clone da VM. Docker/Compose + PostgreSQL permanecem sem validação se essa implantação for escolhida. Domínio/provedor e TLS só entram após nova decisão de controle de acesso: a instalação integrada atual sem login não deve ser publicada.

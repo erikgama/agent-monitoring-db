@@ -29,7 +29,7 @@ resultado e entregando evidência objetiva ao DBA.
 
 ## Estrutura do módulo
 
-- `query_refactor/advisor/agent.py`: advisor Codex/Luna e monitor de jobs.
+- `query_refactor/advisor/agent.py`: advisor do provedor configurado e monitor de jobs.
 - `query_refactor/advisor/rules.md`: regras completas do papel.
 - `query_refactor/advisor/results/<job>/`: entrada, SQLs, resultado, estado e relatório.
 - `query_refactor/mysql_client.py`: execução MySQL restrita e TLS obrigatório.

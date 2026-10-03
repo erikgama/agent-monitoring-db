@@ -4,15 +4,15 @@
 > `config/agent-monitoring.toml`; Codex, Claude Code e Kimi Code usam os mesmos
 > contratos. Modelos e execuções citados no histórico são registros anteriores.
 
-Fluxo somente leitura em que o coletor produz evidências mascaradas e o agente
-Luna decide alertas a partir do HTML e de regras em linguagem natural.
+Fluxo somente leitura em que o coletor produz evidências mascaradas e o LLM
+configurado decide alertas a partir do HTML e de regras em linguagem natural.
 
 ```text
 MySQL Enterprise Audit
         ↓
 collector → audit_security/results/latest.json + audit_security/results/latest.html
         ↓
-Luna + audit_security/advisor/rules.md
+LLM configurado + audit_security/advisor/rules.md
         ↓
 audit_security_alert.v1
         ↓
@@ -46,7 +46,7 @@ Coleta contínua a cada 15 segundos:
 uv run mysql-audit-security monitor
 ```
 
-Agente Luna a cada 15 segundos:
+Advisor a cada 15 segundos:
 
 ```sh
 uv run mysql-audit-advisor
@@ -66,7 +66,7 @@ DBA e exigem confirmação explícita.
 - `audit_security/collector.py`: coleta e mascaramento de fatos;
 - `audit_security/main.py`: coleta única ou contínua;
 - `audit_security/renderer.py`: HTML responsivo no padrão visual do relatório geral do Health Check;
-- `audit_security/advisor/agent.py`: decisão Luna e publicação no MCP;
+- `audit_security/advisor/agent.py`: decisão do LLM e publicação no MCP;
 - `audit_security/advisor/rules.md`: regras naturais de DROP/ALTER bloqueados;
 - `audit_security/advisor/analysis.schema.json`: formato obrigatório da decisão;
 - `audit_security/results/`: último JSON e HTML da coleta;
@@ -85,4 +85,4 @@ uv run ruff format --check .
 
 O Audit não altera filtros, usuários, privilégios, parâmetros, banco ou
 infraestrutura. SQL literal, identidades e endereços são removidos ou
-pseudonimizados antes da persistência e antes do Luna.
+pseudonimizados antes da persistência e antes do LLM.

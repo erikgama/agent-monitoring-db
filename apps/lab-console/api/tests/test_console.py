@@ -837,6 +837,12 @@ def test_refactor_result_is_cataloged_from_its_job_directory(tmp_path):
     (root / "result.json").write_text(json.dumps(result))
     assert catalog.list() == []
 
+    result.pop("password")
+    result["source_audit_id"] = "33333333-3333-4333-8333-333333333333"
+    result.pop("request_id")
+    (root / "result.json").write_text(json.dumps(result))
+    assert catalog.list() == []
+
 
 def test_artifact_symlink_sensitive_mime_size(tmp_path):
     root = make_artifact(tmp_path)

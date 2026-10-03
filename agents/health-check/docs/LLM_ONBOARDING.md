@@ -11,15 +11,15 @@ agir. Código e estado ao vivo prevalecem sobre este registro.
 
 ## Estado arquitetural atual
 
-O Health Check é orientado pelo agente Luna. O coletor não decide alertas e não
-chama o MCP.
+O Health Check usa o advisor com o LLM selecionado em
+`config/agent-monitoring.toml`. O coletor não decide alertas e não chama o MCP.
 
 ```text
 MySQL sakila
     ↓ coleta read-only
 select_latency/results/latest.json + latest.html
     ↓ leitura direta pelo processo mysql-health-advisor
-Luna gpt-5.6-luna, effort low + advisor/rules.md
+LLM configurado + advisor/rules.md
     ↓ decisão estruturada: alert | no_alert | inconclusive
 se alert: coleta síncrona do relatório geral read-only
     ↓
@@ -34,14 +34,14 @@ MCP incident_raise
 O módulo `refactor_collector/` é um fluxo separado. A cada 30 segundos ele
 consulta as últimas quatro horas de `mysql.slow_log`, filtra SELECTs de
 `sakila`, remove valores
-literais do relatório e compara o fingerprint com o catálogo versionado. Luna
+literais do relatório e compara o fingerprint com o catálogo versionado. O LLM configurado
 aplica `refactor_collector/rules.md`: uma query conhecida é candidata somente
 com latência estritamente maior que 80 segundos. Após validação local, o
 processo chama `refactor_request_raise`; o Refactor valida original e proposta
 serialmente em `sakila_dev` e chama `refactor_result_raise` para o DBA.
 
 ```text
-mysql.slow_log -> relatório sanitizado -> Luna -> validação local
+mysql.slow_log -> relatório sanitizado -> LLM configurado -> validação local
   -> MCP refactor_request_raise -> Refactor em sakila_dev
   -> MCP refactor_result_raise -> DBA + aviso Notification sem SQL literal
 ```
@@ -61,31 +61,30 @@ em paralelo, executa sequencialmente a SQL original versionada
 | --- | --- | --- |
 | `select_latency/collector.py` | Coleta a janela da SELECT monitorada e grava evidência | Não aplica o limite de P99 e não publica alertas |
 | `advisor/rules.md` | Define em linguagem natural a regra P99 e o roteamento esperado | Não é executável e não chama processos |
-| `advisor/agent.py` | Lê o HTML, chama Luna, valida a decisão, gera o relatório geral quando há alerta e publica | Não altera banco nem executa workload |
+| `advisor/agent.py` | Lê o HTML, chama o LLM configurado, valida a decisão, gera o relatório geral quando há alerta e publica | Não altera banco nem executa workload |
 | `general_report/` | Coleta e renderiza o diagnóstico geral read-only | Não decide o alerta de latência |
 | `src/alerting/mcp_publisher.py` | Inicia o MCP por stdio e chama `incident_raise` | Não decide severidade nem destinatários |
 | MCP central | Revalida o contrato e roteia | Não interpreta P99 |
 | Notification | Entrega no canal configurado | Não consulta banco e não decide alertas |
 | DBA | Recebe e preserva a evidência encaminhada | É o único coordenador operacional |
 
-## Decisão do Luna
+## Decisão do advisor
 
-- Fonte lida pelo Luna: `select_latency/results/latest.html`.
+- Fonte lida pelo LLM: `select_latency/results/latest.html`.
 - Regra: P99 estritamente maior que `2.0` segundos.
-- Modelo: `gpt-5.6-luna`.
-- Reasoning effort: `low`.
+- Provedor, modelo e esforço: seção `[llm]` de `config/agent-monitoring.toml`.
 - Intervalo padrão do advisor: 15 segundos.
 - P99 igual ou inferior a `2.0` segundos gera `no_alert`.
 - Evidência ausente ou inconsistente gera `inconclusive`.
 - O schema de saída é `advisor/analysis.schema.json`.
 
-O Luna devolve a decisão ao processo Python `mysql-health-advisor`. O próprio
+O LLM devolve a decisão ao processo Python `mysql-health-advisor`. O próprio
 processo Python chama o MCP; nenhum processo observa
 `advisor/results/latest.json` para realizar a publicação.
 
 ## Sequência de publicação
 
-Quando Luna decide `alert`, `advisor/agent.py` executa nesta ordem:
+Quando o LLM decide `alert`, `advisor/agent.py` executa nesta ordem:
 
 1. roda `collect_latest_general_report()`;
 2. lê o novo `general_report/results/report.json` e `report.html`;
@@ -101,7 +100,7 @@ fica em `advisor/results/runtime/`. O cooldown crítico padrão é 120 segundos.
 
 ## Artefatos e fontes de verdade
 
-- `select_latency/results/latest.html`: documento que Luna interpreta.
+- `select_latency/results/latest.html`: documento que o LLM interpreta.
 - `select_latency/results/latest.json`: par estruturado da mesma coleta.
 - `advisor/results/latest.json`: última decisão e resultado da publicação.
 - `advisor/results/runtime/`: estado privado de cooldown.
@@ -158,7 +157,7 @@ O comando é de produção e habilita entrega real. A opção
 `--measurement-seconds 300` é usada no baseline e novamente na medição oficial;
 `--drain-queue` ainda espera todas as consultas enfileiradas terminarem. Assim,
 o laboratório completo pode durar muito mais que cinco minutos. O launcher dá
-até 120 segundos para a primeira análise do Luna.
+até 120 segundos para a primeira análise do LLM configurado.
 
 ## Validação obrigatória após mudanças
 
@@ -176,7 +175,7 @@ exigem autorização explícita e devem registrar o resultado em um handoff.
 
 - Somente `sakila`; `sakila_dev` pertence exclusivamente ao Refactor.
 - SQL somente leitura e versionado.
-- Luna decide; o coletor nunca avalia o threshold.
+- O LLM configurado decide; o coletor nunca avalia o threshold.
 - O relatório geral só é coletado pelo advisor após uma decisão `alert`.
 - Não colocar SMTP, destinatários ou lógica de entrega no Health Check.
 - Não ler nem documentar credenciais.

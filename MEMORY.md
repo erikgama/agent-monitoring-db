@@ -7,6 +7,13 @@ the source of project context that agents should read before starting work.
 It does not replace `AGENTS.md`, repository documentation, source code, or
 the live database as authoritative sources.
 
+## Configuração vigente de LLM
+
+O provedor dos advisors e do chat é selecionado em
+`config/agent-monitoring.toml` (`codex`, `claude` ou `kimi`). Referências a Luna,
+Sol e modelos específicos nas seções históricas abaixo descrevem execuções
+anteriores; consulte a configuração local e o código antes de operar.
+
 ## Team topology
 
 - `DBA` is the coordinator and final consumer for query-analysis work.

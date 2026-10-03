@@ -11,15 +11,15 @@ agir. Código e estado ao vivo prevalecem sobre este registro.
 
 ## Estado arquitetural atual
 
-O Audit é orientado pelo agente Luna. O coletor lê o MySQL Enterprise Audit,
-mas não decide alertas e não chama o MCP.
+O Audit usa o advisor com o LLM selecionado em `config/agent-monitoring.toml`.
+O coletor lê o MySQL Enterprise Audit, mas não decide alertas e não chama o MCP.
 
 ```text
 MySQL Enterprise Audit via audit_log_read()
     ↓ coleta, máscara e normalização read-only
 audit_security/results/latest.json + latest.html
     ↓ leitura direta pelo processo mysql-audit-advisor
-Luna gpt-5.6-luna, effort low + audit_security/advisor/rules.md
+LLM configurado + audit_security/advisor/rules.md
     ↓ decisão estruturada: alert | no_alert | inconclusive
 validação exata da evidência selecionada
     ↓ chamada direta, sem file watcher
@@ -34,27 +34,26 @@ MCP incident_raise
 | Componente | Responsabilidade | Não faz |
 | --- | --- | --- |
 | `audit_security/collector.py` | Lê, mascara e normaliza fatos do Audit | Não aplica regras, severidade ou publicação |
-| `audit_security/main.py` | Executa coleta única ou contínua e grava HTML/JSON | Não chama Luna ou MCP |
+| `audit_security/main.py` | Executa coleta única ou contínua e grava HTML/JSON | Não chama o LLM nem o MCP |
 | `audit_security/advisor/rules.md` | Define em linguagem natural os eventos elegíveis | Não é executável |
-| `audit_security/advisor/agent.py` | Lê o HTML, chama Luna e conduz a publicação quando há alerta | Não executa SQL de mudança |
+| `audit_security/advisor/agent.py` | Lê o HTML, chama o LLM configurado e conduz a publicação quando há alerta | Não executa SQL de mudança |
 | `audit_security/alerting.py` | Confere a evidência exata, valida o contrato, deduplica e chama o MCP | Não reavalia a regra semântica |
 | MCP central | Revalida e roteia o alerta | Não lê o Audit Log |
 | Notification | Entrega no canal configurado | Não consulta banco e não decide alertas |
 | DBA | Recebe e preserva a evidência encaminhada | É o único coordenador operacional |
 
-## O que Luna realmente lê
+## O que o LLM realmente lê
 
-Luna não acessa o Audit Log bruto. O coletor usa `audit_log_read()`, remove ou
+O LLM não acessa o Audit Log bruto. O coletor usa `audit_log_read()`, remove ou
 pseudonimiza SQL, identidades e endereços e grava `audit_security/results/latest.html`. O
 processo `mysql-audit-advisor` lê esse HTML completo e o combina com
 `audit_security/advisor/rules.md`.
 
-- Modelo: `gpt-5.6-luna`.
-- Reasoning effort: `low`.
+- Provedor, modelo e esforço: seção `[llm]` de `config/agent-monitoring.toml`.
 - Intervalo padrão do coletor e do advisor: 15 segundos.
 - Eventos anteriores ao início do advisor são históricos e não alertam.
 - No Lab Console, a primeira coleta valida a conexão e vira a baseline de
-  inicialização; o Luna é chamado somente quando uma coleta posterior chega.
+  inicialização; o LLM é chamado somente quando uma coleta posterior chega.
 - O schema de saída é `audit_security/advisor/analysis.schema.json`.
 
 As regras atuais permitem alertas somente para:
@@ -72,10 +71,10 @@ O próprio processo Python `mysql-audit-advisor` chama o MCP. Não existe file
 watcher nem outro serviço lendo o JSON de decisão.
 
 1. `audit_security/advisor/agent.py` lê `audit_security/results/latest.html` e `latest.json`;
-2. inicia `codex exec` e envia HTML + regras ao Luna;
+2. inicia o cliente do provedor configurado e envia HTML + regras ao LLM;
 3. recebe e valida a decisão estruturada;
 4. `audit_security/alerting.py` confirma que cada campo selecionado existe exatamente no
-   JSON pareado, sem recalcular a regra do Luna;
+   JSON pareado, sem recalcular a regra do LLM;
 5. o processo chama `McpIncidentPublisher.publish()`;
 6. o cliente inicia `uv run --directory mcp mysqlconf-mcp`;
 7. chama a tool `incident_raise` por stdio;
@@ -88,7 +87,7 @@ publicações aceitas pelo MCP.
 
 ## Artefatos e fontes de verdade
 
-- `audit_security/results/latest.html`: relatório mascarado que Luna interpreta.
+- `audit_security/results/latest.html`: relatório mascarado que o LLM interpreta.
 - `audit_security/results/latest.json`: par estruturado usado para validar a evidência.
 - `audit_security/advisor/results/latest.json`: última decisão e resultado MCP.
 - `audit_security/advisor/results/runtime/alert-state.json`: deduplicação de eventos aceitos.
@@ -133,9 +132,9 @@ DDL apenas para testar o Audit por iniciativa própria.
 
 - Escopo funcional exclusivamente `sakila`.
 - Coleta somente leitura e evidência mascarada.
-- Luna é o único dono da decisão de alerta.
+- O LLM configurado é o único dono da decisão de alerta.
 - O coletor nunca chama o MCP.
-- O validador local confirma integridade, mas não substitui a decisão do Luna.
+- O validador local confirma integridade, mas não substitui a decisão do LLM.
 - Não alterar filtros Audit, usuários, privilégios, parâmetros, rotação,
   retenção ou infraestrutura.
 - Não acessar SMTP nem escolher destinatários no Audit.

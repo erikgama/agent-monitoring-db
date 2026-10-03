@@ -18,7 +18,7 @@ original imutável e produz evidências de equivalência e desempenho para o DBA
 
 ## Estrutura
 
-- `query_refactor/advisor/agent.py`: advisor Codex/Luna e worker da inbox;
+- `query_refactor/advisor/agent.py`: advisor do provedor configurado e worker da inbox;
 - `query_refactor/advisor/rules.md`: regras completas do Refactor;
 - `query_refactor/advisor/results/`: jobs, resultados e relatório mais recente;
 - `query_refactor/mysql_client.py`: cliente MySQL restrito a `sakila` e `sakila_dev`;
@@ -33,7 +33,7 @@ original imutável e produz evidências de equivalência e desempenho para o DBA
 
 1. Receber `request.json` em um diretório de job dentro de `results/`.
 2. Preservar `original.sql` literalmente.
-3. Executar o Codex com `gpt-5.6-sol` e reasoning effort `medium` para produzir
+3. Executar o provedor e modelo selecionados no TOML para produzir
    uma proposta estruturada segundo `query_refactor/advisor/rules.md`.
 4. Revalidar localmente que a proposta contém somente uma consulta read-only e
    gravar `advisor.json` e `proposed.sql` no mesmo job.
@@ -43,7 +43,7 @@ original imutável e produz evidências de equivalência e desempenho para o DBA
 8. Entregar `query_refactor_result.v1` exclusivamente ao DBA pelo MCP.
 
 O advisor `query_refactor/advisor/agent.py` verifica os jobs a cada 30 segundos,
-gera uma refatoração nova com Codex/Sol, valida a SQL original e a proposta no
+gera uma refatoração nova com o LLM configurado, valida a SQL original e a proposta no
 `sakila_dev` e envia o resultado ao DBA pela tool MCP
 `refactor_result_raise`. O catálogo recebido do Health Check é usado somente
 para confirmar a SQL original conhecida; sua variante de recomendação não é

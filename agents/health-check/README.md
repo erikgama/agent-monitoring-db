@@ -53,13 +53,13 @@ Monitor contínuo da latência da query configurada:
 uv run mysql-health-latency monitor
 ```
 
-Agente Luna responsável pela decisão e publicação, executado separadamente:
+Advisor responsável pela decisão e publicação, executado separadamente:
 
 ```sh
 uv run mysql-health-advisor
 ```
 
-O Luna verifica a existência de uma nova coleta a cada 15 segundos, tanto no
+O advisor verifica a existência de uma nova coleta a cada 15 segundos, tanto no
 entrypoint direto quanto no laboratório do app.
 
 Sem habilitação explícita, a coleta básica não inicia o MCP e não envia e-mail.
@@ -67,12 +67,12 @@ Sem habilitação explícita, a coleta básica não inicia o MCP e não envia e-
 ## Regra do agente e recorrência
 
 O coletor captura a latência e grava `select_latency/results/latest.html`, sem
-avaliar thresholds e sem chamar o MCP. O agente Luna lê o HTML completo e a
+avaliar thresholds e sem chamar o MCP. O LLM configurado lê o HTML completo e a
 [regra do agente](advisor/rules.md). P99 estritamente maior que 2 segundos
 produz uma decisão de alerta crítico `query_latency`; exatamente 2 segundos
 não alerta. Evidência ausente ou inconsistente produz `inconclusive`.
 
-Somente depois da decisão `alert`, o processo do Luna executa a coleta geral
+Somente depois da decisão `alert`, o processo do advisor executa a coleta geral
 somente leitura, monta e valida `health_check_alert.v1` e chama
 `incident_raise` no MCP. O MCP registra no DBA os arquivos atualizados
 `general_report/results/report.json` e `report.html` e, após essa confirmação,
@@ -85,7 +85,7 @@ decisão. O cooldown crítico padrão continua em 120 segundos.
 O orquestrador do repositório executa o fluxo completo com feedback no console:
 
 ```text
-carga read-only do DBA -> coletor HTML -> Luna -> MCP -> inbox do DBA -> Notification
+carga read-only do DBA -> coletor HTML -> LLM configurado -> MCP -> inbox do DBA -> Notification
 ```
 
 A partir da raiz do repositório, confira o plano sem iniciar processos:
@@ -103,14 +103,15 @@ python3 apps/lab-console/scripts/run-health-check-lab.py --execute
 O script valida dependências e capacidades, inicia `mysql-health-latency` e
 `mysql-health-advisor`, aciona o workload oficial
 `agents/dba/load-tests/sakila-read-only/sakila_read_demo_35.py` e deixa o
-Luna decidir e publicar pelo MCP. A carga usa somente `sakila`, com 10 queries de
+advisor decidir e publicar pelo MCP. A carga usa somente `sakila`, com 10 queries de
 aquecimento, baseline de 10 TPS, carga entre 10 e 15 TPS e medição configurada
 para 300 segundos.
 
 O modo `--execute` habilita MCP, inbox do DBA e e-mail real somente no ambiente
 dos processos filhos. O orquestrador carrega apenas a configuração não secreta
 do Notification; a senha SMTP não é lida nem encaminhada e só pode ser
-resolvida pelo próprio Notification no Chaves do macOS. `Ctrl-C` interrompe a
+resolvida pelo próprio Notification no Chaves do macOS ou pelo helper corporativo
+no Linux. `Ctrl-C` interrompe a
 carga e encerra monitor e advisor por grupo de processos.
 
 Em 2026-09-17, o laboratório foi validado em paralelo com o Audit: o alerta
@@ -140,7 +141,7 @@ uv run ruff format --check .
 
 - `general_report/`: implementação, SQL, regras e resultados do relatório geral;
 - `select_latency/`: SQL e resultados do coletor SELECT;
-- `advisor/`: regra, prompt, schema e resultados das decisões do Luna;
+- `advisor/`: regra, prompt, schema e resultados das decisões do LLM configurado;
 - `src/`: bibliotecas compartilhadas, coleta de latência e transporte de alertas;
 - `policy.json`: escopo e timeout compartilhados das coletas;
 - `alerts/`: contrato dos alertas;

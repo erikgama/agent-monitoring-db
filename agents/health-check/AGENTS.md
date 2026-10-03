@@ -19,26 +19,26 @@ HeatWave e devolver evidência atual ao DBA, sem realizar mudanças no banco.
 - `general_report/rules/report-rules.json`: regras de coleta, retenção, limites e avaliação do relatório geral.
 - `src/`: bibliotecas compartilhadas de coleta, conexão e publicação de alertas.
 - `select_latency/sql/`: blocos SQL read-only do monitor SELECT, versionados e protegidos por allowlist.
-- `advisor/rules.md`: regra operacional lida pelo agente Luna para decidir sobre o HTML de latência.
+- `advisor/rules.md`: regra operacional lida pelo LLM configurado para decidir sobre o HTML de latência.
 - `pyproject.toml`: entrypoints Python para coleta, monitor e advisor.
-- `advisor/`: agente executável, regra completa, schema e resultados das decisões do Luna.
+- `advisor/`: agente executável, regra completa, schema e resultados das decisões do LLM configurado.
 - `refactor_collector/`: coleta sanitizada e latest-only de SELECTs lentas de
-  `mysql.slow_log`, restrita ao schema `sakila`; Luna aplica a regra manual de
+  `mysql.slow_log`, restrita ao schema `sakila`; o LLM configurado aplica a regra de
   80 segundos e publica no MCP somente candidatos conhecidos e versionados.
 - `policy.json`: escopo e timeout compartilhados das coletas.
 - `tests/`: validação simulada, segurança SQL e publicação atômica.
 - `general_report/results/report.json`: fonte de verdade da coleta mais recente.
 - `general_report/results/report.html`: visualização estática do mesmo snapshot.
 - `select_latency/results/`: JSON, HTML e estado privado do monitor SELECT.
-- `advisor/results/`: decisão mais recente do Luna e estado privado de cooldown.
+- `advisor/results/`: decisão mais recente do advisor e estado privado de cooldown.
 - `logs/collector.log`: log operacional sanitizado.
 - `alerts/`: documentação e exemplo do alerta P99.
 - `contracts/`: schemas canônicos `health_check_alert.v1` e
   `query_refactor_request.v1`.
 - `src/alert_contract.py`: validação local do contrato.
-- `src/alerting/`: cooldown, estado mínimo e cliente stdio usado pelo Luna para
+- `src/alerting/`: cooldown, estado mínimo e cliente stdio usado pelo advisor para
   chamar a tool MCP `incident_raise` quando ele decidir pelo alerta P99.
-- Após uma decisão `alert`, Luna executa a coleta geral read-only existente e
+- Após uma decisão `alert`, o processo do advisor executa a coleta geral read-only existente e
   envia ao MCP o JSON e o HTML atualizados do relatório geral para o DBA; o
   audit ID da latência permanece como origem da decisão.
 - `README.md` e `CONEXAO.md`: operação e autenticação.

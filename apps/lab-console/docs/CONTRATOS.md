@@ -29,7 +29,7 @@ OpenAPI em `/openapi.json` (API versão `0.1.0`), documentação em `/docs`. End
 A Central de ocorrências usa endpoints sob `/api/dba/incidents`. A listagem lê
 somente as inboxes Health Check e Audit no modo integrado. Uma tarefa interna da
 API resume automaticamente apenas novos registros e persiste `summary.md`; o
-detalhe nunca chama o Luna e apenas devolve o resumo já existente.
+detalhe nunca chama o modelo e apenas devolve o resumo já existente.
 `evidence/{filename}` aceita apenas os nomes fixos de cada contrato e mascara
 indicadores sensíveis sem alterar a origem. A rota `question` usa o conjunto
 fechado de arquivos e não aceita paths, SQL ou instruções de ação.
@@ -63,13 +63,13 @@ SSE invalida o cache TanStack; polling de 3 segundos recompõe o snapshot após 
 
 ## Artefatos
 
-IDs opacos, hash SHA-256 do JSON, identidade de coleta e tamanho. O navegador não fornece paths. Raízes explícitas em `api/labconsole/artifacts.py`: relatório geral Health, resultados de latência, relatório Audit e inboxes DBA. Refactor só admitirá JSON/HTML compatível dentro de `reports/`, nunca Markdown arbitrário.
+IDs opacos, hash SHA-256 do JSON, identidade de coleta e tamanho. O navegador não fornece paths. Raízes explícitas em `api/labconsole/artifacts.py`: relatório geral Health, resultados de latência, relatório Audit, resultados `result.json` do Refactor e inboxes DBA. O catálogo Refactor exige a versão `query_refactor_result.v1` e IDs obrigatórios; a validação integral do contrato cabe ao MCP. O `result.json` pode conter SQL literal e fica disponível apenas no integrado local; a demo pública bloqueia arquivos do clone. Arquivos `.sql` e Markdown arbitrário não entram na biblioteca.
 
-Somente nomes de arquivo permitidos; até 200 candidatos por raiz; 2 MB por arquivo; RPC com deadline de 15s. Todos os componentes do caminho são abertos com `O_NOFOLLOW`; arquivos especiais, links simbólicos e travessia de diretório são rejeitados. JSON precisa ser válido e ter audit_id. HTML deve conter o mesmo audit_id e timestamp. Latest substituído causa erro; não ocorre fallback silencioso.
+Somente nomes de arquivo permitidos; até 200 candidatos por raiz; 2 MB por arquivo; RPC com deadline de 15s. Todos os componentes do caminho são abertos com `O_NOFOLLOW`; arquivos especiais, links simbólicos e travessia de diretório são rejeitados. JSON precisa ser válido e trazer a identidade exigida por sua origem (`audit_id` ou IDs do Refactor). HTML deve conter o mesmo `audit_id` e timestamp do JSON pareado. Latest substituído causa erro; não ocorre fallback silencioso.
 
 O Health histórico pode ter HTML. A inbox Audit só tem resumos JSON: a interface mostra “HTML histórico não retido”. A Central de ocorrências abre somente os arquivos do `record_id` selecionado; sem correspondência, exibe ausência explícita.
 
-HTML é servido com MIME fixo, CSP sandbox e `script-src 'none'`. A UI usa iframe sandbox sem permissões e CSP adicional para bloquear recursos remotos. Nunca usa `innerHTML` no DOM da aplicação. Download/impressão usam a sessão local automática no mesmo endpoint; não há autenticação individual da pessoa. Na biblioteca geral, conteúdo com indicadores sensíveis continua bloqueado integralmente. Na Central de ocorrências, a API mascara esses indicadores apenas na cópia entregue ao Luna e ao navegador; a evidência original da inbox não é modificada.
+HTML é servido com MIME fixo, CSP sandbox e `script-src 'none'`. A UI usa iframe sandbox sem permissões e CSP adicional para bloquear recursos remotos. Nunca usa `innerHTML` no DOM da aplicação. Download/impressão usam a sessão local automática no mesmo endpoint; não há autenticação individual da pessoa. Na biblioteca geral, conteúdo com indicadores sensíveis continua bloqueado integralmente. Na Central de ocorrências, a API mascara esses indicadores apenas na cópia entregue ao modelo e ao navegador; a evidência original da inbox não é modificada.
 
 ## Persistência
 

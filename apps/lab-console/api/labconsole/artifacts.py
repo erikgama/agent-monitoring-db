@@ -142,6 +142,10 @@ class Catalog:
                             data.get("generated_at", data.get("completed_at")),
                         ),
                     )
+                    if label == "refactor" and not (
+                        result_id and data.get("request_id") and stamp
+                    ):
+                        continue
                     if not audit_id and not (
                         result_id and data.get("request_id") and stamp
                     ):

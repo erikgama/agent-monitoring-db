@@ -33,25 +33,25 @@ As regras completas estão em [AGENTS.md](AGENTS.md).
 
 A Central de ocorrências do Lab Console lista diretamente as duas inboxes. Com
 o serviço integrado ativo, a API detecta cada nova ocorrência, entrega ao
-`gpt-5.6-luna`, com effort `low`, uma cópia mascarada somente dos JSONs
+LLM de análise configurado uma cópia mascarada somente dos JSONs
 essenciais e persiste `results/<record-id>/summary.md` na pasta de análise
-correspondente. Abrir uma ocorrência nunca aciona o Luna: a tela apenas lê o
+correspondente. Abrir uma ocorrência nunca aciona o LLM: a tela apenas lê o
 resumo que já estiver salvo. Ocorrências históricas sem resumo permanecem
 disponíveis com suas evidências originais.
 
-O Luna atua apenas como ajudante de leitura: organiza os fatos registrados e
+O LLM atua apenas como ajudante de leitura: organiza os fatos registrados e
 indica informações ausentes. Ele não procura causa raiz, não recomenda
 melhorias, não decide ações, não chama MCP e não acessa o MySQL. Os arquivos
 originais das inboxes permanecem imutáveis.
 
-O chat contextual usa `chat/prompt.md`. A cada pergunta, o Codex executa
-`gpt-5.6-sol` com effort `medium` e recebe somente a ocorrência selecionada:
+O chat contextual usa `chat/prompt.md`. A cada pergunta, o provedor e modelo
+configurados recebem somente a ocorrência selecionada:
 metadados, JSONs autorizados, resumo já persistido e até as 12 mensagens mais
 recentes da conversa. Ele atua como DBA sênior de MySQL para explicar essas
 evidências, mantém separados os escopos de schema e instância e faz perguntas
 curtas quando faltam contexto ou objetivo. O chat não consulta o banco, não
 executa SQL e não recomenda mudanças. O resumo automático continua separado no
-`gpt-5.6-luna` com effort `low`.
+LLM de análise configurado.
 
 ## Laboratórios controlados
 

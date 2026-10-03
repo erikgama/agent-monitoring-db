@@ -36,11 +36,12 @@ O último endpoint informa o **modo da API**, não a saúde do banco ou a entreg
 - A validação integrada de 23/09/2026 comprovou Health Check, Audit, MCP,
   Notification, DBA e Refactor de ponta a ponta. DROP e ALTER foram negados
   pela conta restrita e nenhuma mutação foi aplicada.
-- Docker, PostgreSQL real e deployment público não foram homologados. O chat
-  contextual usa o analisador Codex configurado e o Refactor processa somente
+- Docker/Compose com PostgreSQL real não foram homologados. A VM serviu uma
+  demo pública isolada; o modo integrado segue restrito ao loopback. O chat
+  contextual usa o provedor LLM configurado e o Refactor processa somente
   solicitações versionadas no laboratório `sakila_dev`.
 
-Uma demo pode estar ativa em um runtime temporário de validação, mas isso não é garantia de processo vivo. `/private/tmp` pode ser limpo pelo sistema; para preservar metadados da demo, use o runtime padrão dentro do app. Nunca dependa de IDs de sessão do chat para reiniciar o projeto.
+Uma demo pode estar ativa em um runtime temporário de validação, mas isso não é garantia de processo vivo. Diretórios temporários podem ser limpos pelo sistema; para preservar metadados da demo, use o runtime padrão dentro do app. Nunca dependa de IDs de sessão do chat para reiniciar o projeto.
 
 ### Stack implementada
 
@@ -62,9 +63,9 @@ Requisitos: Python 3.11+, `uv`, Node.js 22.14+ e npm. Dependências travadas em 
 
 ```sh
 cd "${AGENT_MONITORING_ROOT}/apps/lab-console/api"
-uv sync --frozen --extra dev --cache-dir /private/tmp/mysqlconf-lab-uv-cache
+uv sync --locked --extra dev
 cd ../web
-npm ci --cache /private/tmp/mysqlconf-lab-npm-cache
+npm ci
 cd ..
 python3 scripts/dev.py
 ```
@@ -112,7 +113,7 @@ flowchart LR
   Scripts --> Audit[Audit Security]
   Health --> MCP[MCP central · stdio sob demanda]
   Audit --> MCP
-  MCP --> Notification[Notification · Chaves local → SMTP]
+  MCP --> Notification[Notification · Chaves ou helper → SMTP]
   MCP --> DBA[Inboxes do DBA]
   Runner -->|leitura allowlisted| Reports[JSON / HTML dos agentes e inboxes]
   Health -->|query_refactor_request.v1| MCP
@@ -162,7 +163,7 @@ apps/lab-console/
 | `api/labconsole/runner.py` | Tradução de ações para executores, correlação e controle de processos |
 | `api/labconsole/guardian.py` | Watchdog dos processos iniciados pelo runner |
 | `api/labconsole/artifacts.py` | Catálogo e leitura segura de JSON/HTML existentes |
-| `api/labconsole/incident_analysis.py` | Leitura das inboxes DBA, mascaramento e resumo factual pelo Luna |
+| `api/labconsole/incident_analysis.py` | Leitura das inboxes DBA, mascaramento e resumo factual pelo LLM configurado |
 | `api/labconsole/security.py` | Assinaturas, sanitização e compatibilidade de autenticação legada |
 | `api/labconsole/store.py` | Metadados persistidos, versão de schema e retenção |
 | `api/labconsole/demo.py` | Eventos, resultados e relatórios fictícios |
@@ -222,7 +223,11 @@ cd "${AGENT_MONITORING_ROOT}/apps/lab-console/api"
 
 ## Publicação online e Docker
 
-Os Dockerfiles estão preparados. O runner permanece no macOS/host do laboratório para usar o perfil MySQL e o Chaves existentes. **Docker/Compose não foram executados nesta máquina, pois Docker não está instalado. Não há deployment público realizado.**
+Os Dockerfiles estão preparados, mas Docker/Compose não fazem parte da validação
+de instalação do clone. O runner integrado foi validado em Oracle Linux com
+perfil MySQL local e helper temporário de SMTP. A operação contínua de e-mail
+na VM ainda exige ligar um helper persistente ao cofre corporativo. Consulte
+[`docs/VALIDATION_VM.md`](../../docs/VALIDATION_VM.md) para o escopo verificado.
 
 Configure variáveis com base em `.env.example`, substituindo os valores fictícios. Depois:
 
@@ -259,7 +264,7 @@ cd api
 .venv/bin/ruff format --check labconsole tests ../scripts
 .venv/bin/mypy
 .venv/bin/pytest -q
-uv build --cache-dir /private/tmp/mysqlconf-lab-uv-cache
+uv build
 cd ../web
 npm run lint
 npm run format:check
@@ -305,9 +310,9 @@ Explique o estado encontrado antes de implementar a próxima solicitação.
 
 ## Escopo desta versão
 
-- A Central de ocorrências usa o Luna somente para resumir automaticamente novas ocorrências recebidas nas inboxes do DBA enquanto a API integrada está ativa. Abrir uma ocorrência apenas lê o resumo salvo e nunca dispara o modelo. Ela não consulta o banco, não busca causa raiz, não recomenda melhorias e não apresenta a antiga aba de proposta de ação.
-- Refactor está representado no fluxo, mas os relatórios existentes são Markdown e não há contrato HTML/JSON compatível liberado no catálogo. A biblioteca permanece vazia para ele; nenhum documento potencialmente sensível é publicado automaticamente.
-- O teste Notification usa o entrypoint manual existente para dry-run e o runtime público `notification.runtime.build_dispatcher` para envio, com dois gates (`--send` e delivery habilitado). O runtime resolve a senha no Chaves dentro do processo Notification. No modo integrado pode enviar **um e-mail real**, somente após confirmação; não fabrica registro MCP/DBA desse teste direto.
+- A Central de ocorrências usa o LLM configurado somente para resumir automaticamente novas ocorrências recebidas nas inboxes do DBA enquanto a API integrada está ativa. Abrir uma ocorrência apenas lê o resumo salvo e nunca dispara o modelo. Ela não consulta o banco, não busca causa raiz, não recomenda melhorias e não apresenta a antiga aba de proposta de ação.
+- A biblioteca integrada inclui `result.json` dos jobs Refactor com `contract_version=query_refactor_result.v1` e IDs obrigatórios, após validação de caminho, conteúdo e indicadores sensíveis. Esse JSON pode conter o SQL original e a proposta; a demo pública não expõe os arquivos do clone. A biblioteca não substitui a validação integral do contrato pelo MCP. Arquivos `.sql` e relatórios Markdown do job não entram no catálogo.
+- O teste Notification usa o entrypoint manual existente para dry-run e o runtime público `notification.runtime.build_dispatcher` para envio, com dois gates (`--send` e delivery habilitado). O runtime resolve a senha no Chaves do macOS ou pelo helper corporativo no Linux, dentro do processo Notification. No modo integrado pode enviar **um e-mail real**, somente após confirmação; o teste direto não fabrica registro MCP/DBA.
 - O orquestrador dos três alertas exige confirmações independentes de MCP, Notification e DBA. Ele encerra Health após a primeira confirmação de envio e encerra o conjunto quando os três fluxos estão completos. Não é garantia matemática de exactly-once externo: uma entrega já em trânsito não pode ser desfeita.
 - Catálogo de evidências é fail-closed: bloqueia arquivos com indicadores sensíveis, caminhos/links não permitidos e HTML que não corresponda a `audit_id` + timestamp. Não altera retenção dos agentes nem inventa HTML histórico do Audit.
 - Regras exibidas são a política documentada atual (P99 2s/30s e cooldown 120s), não edição online de configuração. Jobs, controles, propostas e relatórios respeitam as limitações detalhadas em [OPERACAO.md](docs/OPERACAO.md).

@@ -30,7 +30,7 @@
 - `audit-security-alerts/`: inbox privada e sanitizada para eventos do Audit
   Security validados pelo MCP; não guarda o relatório completo.
 - `analise-ocorrencia-health-check/` e `analise-ocorrencia-audit/`: prompts e
-  resumos factuais gerados pelo Luna a partir das inboxes; não investigam causa,
+  resumos factuais gerados pelo LLM configurado a partir das inboxes; não investigam causa,
   não recomendam melhorias e não consultam o banco.
 - `refactor-results/runtime/inbox/`: resultados validados pelo MCP do fluxo
   Health Check -> Refactor; a presença do resultado não autoriza produção.

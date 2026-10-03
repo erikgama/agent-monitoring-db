@@ -10,12 +10,12 @@ ações corretivas.
 
 O contrato é compartilhado com MCP e Notification, por isso o schema permanece
 versionado e compatível com os consumidores. No estado atual, este produtor
-emite somente `query_latency`, a partir da decisão do agente Luna documentada
+emite somente `query_latency`, a partir da decisão do provedor LLM configurado documentada
 em `../advisor/rules.md`, com severidade `critical`.
 
 ## Escopo
 
-O alerta descreve uma condição identificada pelo agente Luna no relatório HTML do MySQL HeatWave
+O alerta descreve uma condição identificada pelo provedor LLM configurado no relatório HTML do MySQL HeatWave
 PaaS. O escopo inclui InnoDB e, quando disponível, replicação. Exclui
 infraestrutura, host, disco, rede, segurança, slow query log, migração de
 engine e o cluster analítico/secondary engine/RAPID.
@@ -101,7 +101,7 @@ O contrato reutiliza essas garantias e acrescenta validação cruzada no envelop
 
 ## Fluxo de uso
 
-O agente Luna lê o HTML de latência e decide conforme `advisor/rules.md`. Apenas
+O provedor LLM configurado lê o HTML de latência e decide conforme `advisor/rules.md`. Apenas
 uma decisão `alert` gera o envelope. O agente executa a coleta geral read-only,
 anexa seu JSON e HTML, valida o contrato localmente e chama `incident_raise` no
 MCP central. O MCP revalida o contrato e controla o encaminhamento. O contrato

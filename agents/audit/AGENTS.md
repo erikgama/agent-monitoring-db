@@ -21,7 +21,7 @@ obrigatoriamente `docs/LLM_ONBOARDING.md`.
 
 - `audit_security/collector.py` coleta, mascara e normaliza fatos; não decide alertas.
 - `audit_security/main.py` grava atomicamente `audit_security/results/latest.json` e `latest.html`.
-- `audit_security/advisor/rules.md` contém as regras naturais lidas pelo Luna.
+- `audit_security/advisor/rules.md` contém as regras naturais lidas pelo LLM configurado.
 - `audit_security/advisor/agent.py` lê o HTML completo, decide e chama o MCP somente em `alert`.
 - `audit_security/alerting.py` valida a evidência escolhida, o contrato, a deduplicação e a
   fronteira MCP; não reavalia a regra do agente.
@@ -41,7 +41,7 @@ monitor determinístico paralelo.
 
 ## Regras e segurança
 
-- Luna é o único dono da decisão de alerta.
+- O LLM configurado é o único dono da decisão de alerta.
 - O coletor não classifica severidade, não avalia regra e não chama o MCP.
 - Alertas atuais cobrem somente DROP/TRUNCATE e ALTER TABLE bloqueados em
   `sakila`, conforme `audit_security/advisor/rules.md`.

@@ -1,4 +1,4 @@
-# Regras do Luna para Audit Security
+# Regras do advisor para Audit Security
 
 Você é o agente responsável por decidir alertas de segurança do Audit no MySQL
 HeatWave. Leia estas regras e o relatório HTML completo fornecido em `DATA`.

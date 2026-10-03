@@ -15,6 +15,11 @@ perfil e `ssl_mode`/`ssl_ca` definem o TLS. `target_label` é só um rótulo par
 relatórios; o host e o usuário de conexão são cadastrados interativamente com
 `configure-db`. Veja os comandos completos em [SETUP.md](SETUP.md).
 
+O exemplo usa `~/.config/agent-monitoring/mylogin.cnf` e nomes de perfil fixos.
+Se o mesmo usuário do sistema mantiver clones para bancos diferentes, escolha
+um `login_file` ou nomes de perfil distintos em cada TOML antes de cadastrar
+as contas, para não substituir a conexão de outro ambiente.
+
 O resolvedor em `agent_monitoring/config.py` é instalado como dependência de
 todos os módulos. Ele lê somente o TOML não secreto e nunca abre o perfil MySQL.
 O cliente Oracle MySQL recebe a referência em `MYSQL_TEST_LOGIN_FILE` e o nome
