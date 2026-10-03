@@ -30,6 +30,13 @@ fixtures; login LLM, conexão MySQL e entrega SMTP têm verificações próprias
 
 Nenhuma senha entra no TOML, no arquivo SMTP ou no Git. A configuração do banco
 e do LLM é compartilhada pelos agentes; Notification usa o arquivo SMTP local.
+
+**Aviso sobre o banco:** o perfil local do MySQL é a opção simples deste guia
+para facilitar a instalação. Para operação corporativa contínua, o ideal é
+integrar um cofre de segredos com controle de acesso e rotação. Essa integração
+para as credenciais MySQL ainda não faz parte do projeto; veja os
+[limites do método atual](docs/CONNECTION.md).
+
 Siga o [guia completo, na ordem](docs/SETUP.md) para preencher e verificar cada
 referência.
 

@@ -188,6 +188,11 @@ desempenho do SQL dependem da validação específica em `sakila_dev`.
 
 ## 7. Cadastrar os perfis do banco
 
+Esta etapa usa o caminho simples de instalação com `mysql_config_editor`.
+Para operação corporativa contínua, leia a [nota sobre cofre e limites do
+arquivo de login](CONNECTION.md); o projeto ainda não integra um cofre para
+credenciais MySQL.
+
 O banco deve estar preparado pelo DBA e alcançável da máquina. Em
 `config/agent-monitoring.toml`, ajuste a seção `[database]` antes de cadastrar
 as contas. Este arquivo contém apenas referências, nunca senhas:

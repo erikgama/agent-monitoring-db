@@ -22,6 +22,22 @@ em `--login-path`. Host, usuário e senha permanecem dentro do arquivo gerenciad
 por `mysql_config_editor`. O arquivo é ofuscado pelo cliente; proteja seu acesso
 no sistema operacional e nunca o versione.
 
+## Método simples e evolução para um cofre
+
+O `mysql_config_editor` foi escolhido para que cada pessoa consiga cadastrar
+seus perfis com um prompt, sem colocar a senha no comando ou no Git. É uma
+opção prática para instalar e testar o projeto. A ofuscação do arquivo de login
+evita exposição acidental, mas não substitui um cofre de segredos; mantenha o
+arquivo acessível somente ao usuário do processo. O próprio
+[manual do MySQL](https://dev.mysql.com/doc/refman/8.4/en/mysql-config-editor.html)
+explica esse limite.
+
+Para operação corporativa contínua, recomendamos integrar um gerenciador de
+segredos da organização, com acesso restrito e rotação. O código atual **não
+busca credenciais MySQL em um cofre**: essa integração exige implementação e
+validação próprias. O TOML pode continuar como ponto central de referências.
+Veja as [orientações da OWASP para gestão de segredos](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html).
+
 | Papel | Chave do TOML | Schema permitido |
 | --- | --- | --- |
 | Health Check, Audit, DBA | `monitoring_login_path` | `sakila` e metadados necessários |
