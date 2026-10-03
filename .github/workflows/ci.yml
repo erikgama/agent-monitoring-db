@@ -6,13 +6,13 @@ permissions:
   contents: read
 jobs:
   offline:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6.0.0
+      - uses: actions/setup-node@v6.0.0
         with:
           node-version: '22'
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           version: '0.12.22'
       - name: Install from lockfiles
