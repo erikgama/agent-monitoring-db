@@ -56,7 +56,8 @@ Para preparar um clone, use `python3 scripts/smtp_setup.py init`, configure
 `agents/notification/.notification.local.env`, execute
 `python3 scripts/smtp_setup.py check` e, com destinatarios autorizados,
 `python3 scripts/smtp_setup.py send-test --send`. O ultimo comando envia um
-e-mail real. O [passo a passo](../../../docs/SETUP.md) detalha cada etapa.
+e-mail real aos destinatarios WARNING; confirme a chegada na caixa. O
+[passo a passo](../../../docs/SETUP.md) detalha cada etapa.
 
 ### Linux e gerenciador de segredos corporativo
 
@@ -71,8 +72,9 @@ somente em memoria e nunca publica stdout/stderr. Falhas retornam apenas
 `smtp_credential_lookup_failed`. Sem entrega habilitada, o helper nao e chamado.
 
 Esta referencia permite usar o gerenciador corporativo de cada instalacao.
-O projeto nao instala nem presume um cofre especifico. A injecao direta de
-`SMTP_PASSWORD` continua disponivel para o processo isolado de Notification.
+O projeto nao instala nem presume um cofre especifico. A API isolada do
+Notification ainda aceita `SMTP_PASSWORD` no ambiente efemero do processo;
+o arquivo `.notification.local.env` e o helper de setup nao aceitam essa chave.
 
 Toda configuracao vem do ambiente do processo. Nenhum valor real ou sensivel e
 versionado. O arquivo `.env.example` contem somente placeholders ficticios e
@@ -80,23 +82,27 @@ serve como referencia; o agente nao cria nem carrega um `.env` real.
 
 | Variavel | Padrao | Uso |
 |---|---:|---|
-| `NOTIFICATION_DELIVERY_ENABLED` | `false` | Habilita a unica tentativa SMTP |
+| `NOTIFICATION_DELIVERY_ENABLED` | `false` | Fica `false` no arquivo local; habilitacao real ocorre somente no processo |
 | `NOTIFICATION_EMAIL_FROM` | vazio | Remetente controlado pelo operador |
 | `NOTIFICATION_EMAIL_RECIPIENTS_WARNING` | vazio | Lista separada por virgulas |
 | `NOTIFICATION_EMAIL_RECIPIENTS_CRITICAL` | vazio | Lista separada por virgulas |
 | `NOTIFICATION_EMAIL_RECIPIENTS_REFACTOR` | vazio | Lista do aviso de conclusao; quando vazia usa WARNING |
 | `SMTP_HOST` | vazio | Servidor SMTP |
 | `SMTP_PORT` | `587` | Porta SMTP |
-| `SMTP_USERNAME` | vazio | Usuario SMTP opcional |
-| `SMTP_PASSWORD` | vazio | Senha SMTP opcional; nunca registrada. Se ausente no fluxo MCP local, o proprio Notification consulta o Chaves |
-| `NOTIFICATION_SMTP_KEYCHAIN_SERVICE` | `mysqlconf-notification-smtp` | Referencia fixa do Chaves; outro valor e rejeitado |
+| `SMTP_USERNAME` | vazio | Conta SMTP obrigatoria no arquivo do fluxo integrado e no helper de setup |
+| `SMTP_PASSWORD` | vazio | Uso somente no processo isolado com injecao segura; nao entra no arquivo local. Sem ela, Notification consulta o helper ou Chaves |
+| `NOTIFICATION_SMTP_KEYCHAIN_SERVICE` | `mysqlconf-notification-smtp` | Referencia fixa do Chaves na API isolada; nao adicionar ao arquivo local |
 | `SMTP_USE_STARTTLS` | `true` | Solicita STARTTLS antes de autenticar |
 
-`SMTP_USERNAME` e `SMTP_PASSWORD` devem ser configurados juntos quando o
-servidor exigir autenticacao. Quando existe usuario autenticado,
+Na API isolada, `SMTP_USERNAME` e `SMTP_PASSWORD` devem ser configurados juntos
+quando o servidor exigir autenticacao. No fluxo integrado, o usuario e
+obrigatorio e a senha e resolvida em runtime pelo helper ou Chaves. Quando
+existe usuario autenticado,
 `NOTIFICATION_EMAIL_FROM` deve ser exatamente a mesma conta, sem alias ou nome
 de exibicao. Com entrega habilitada, remetente e host sao obrigatorios. Valores
-booleanos aceitos: `true/false`, `1/0`, `yes/no` e `on/off`.
+booleanos aceitos: `true/false`, `1/0`, `yes/no` e `on/off`. O parser do arquivo
+integrado aceita apenas as chaves documentadas no modelo `.env.example`;
+`SMTP_PASSWORD` e `NOTIFICATION_SMTP_KEYCHAIN_SERVICE` nao pertencem a ele.
 
 ### Gmail SMTP
 
@@ -108,7 +114,6 @@ SMTP_PORT=587
 SMTP_USE_STARTTLS=true
 SMTP_USERNAME=<endereco Gmail completo>
 NOTIFICATION_EMAIL_FROM=<o mesmo endereco Gmail completo>
-SMTP_PASSWORD=<senha de app injetada pelo ambiente seguro do operador>
 ```
 
 Referencia oficial: [Enviar e-mail de um dispositivo ou
@@ -120,9 +125,9 @@ timeout explicito de 10 segundos. STARTTLS usa o armazenamento de autoridades
 certificadoras do sistema, validacao da cadeia e verificacao do hostname por
 meio de `ssl.create_default_context()`.
 
-A senha de app deve ser provisionada no ambiente do processo por mecanismo
-seguro do operador. Nao a coloque no comando, `.env.example`, README, arquivos
-de shell versionados ou historico do terminal.
+A senha de app deve ser provisionada no Chaves ou no cofre consultado pelo
+helper. Nao a coloque no comando, `.env.example`, README, arquivos de shell
+versionados ou historico do terminal.
 
 Uma instalacao local pode manter os valores nao secretos em
 `.notification.local.env`, que e ignorado pelo Git e lido diretamente pelos
@@ -138,6 +143,17 @@ como senha generica no Chaves do macOS. A referencia possui:
 - servico: `mysqlconf-notification-smtp`;
 - conta: o mesmo endereco definido em `SMTP_USERNAME`;
 - segredo: armazenado somente no Chaves e nunca documentado ou versionado.
+
+Para cadastrar ou atualizar o item no mesmo usuario macOS que executara o
+projeto, use o prompt interativo (substitua apenas o endereco):
+
+```sh
+security add-generic-password -U -a "SEU_EMAIL_SMTP" -s mysqlconf-notification-smtp -w
+```
+
+Depois execute `python3 scripts/smtp_setup.py check` e
+`python3 scripts/smtp_setup.py send-test --send` na raiz do clone. `check` nao
+consulta o Chaves nem abre uma conexao SMTP; o envio real testa essa etapa.
 
 O fluxo MCP local de autenticacao e:
 
@@ -178,8 +194,8 @@ ao usuario do macOS. Esse mecanismo e exclusivo do ambiente local atual; uma
 implantacao de servico deve usar o gerenciador de segredos corporativo e
 injecao de segredo em runtime.
 
-O registro operacional detalhado esta em
-[`2026-09-15-smtp-authentication.md`](../reports/2026-09-15-smtp-authentication.md).
+O [registro da validacao em VM](../../../docs/VALIDATION_VM.md) separa o teste
+de referencias SMTP da entrega real e do recebimento confirmado.
 
 ## Politica inicial
 

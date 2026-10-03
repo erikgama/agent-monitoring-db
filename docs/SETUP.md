@@ -189,8 +189,20 @@ desempenho do SQL dependem da validação específica em `sakila_dev`.
 ## 7. Cadastrar os perfis do banco
 
 O banco deve estar preparado pelo DBA e alcançável da máquina. Em
-`config/agent-monitoring.toml`, configure `login_file`, perfis, TLS,
-`ssl_ca` quando aplicável e `expected_port`. Cadastre primeiro monitoramento:
+`config/agent-monitoring.toml`, ajuste a seção `[database]` antes de cadastrar
+as contas. Este arquivo contém apenas referências, nunca senhas:
+
+| Campo em `[database]` | O que preencher |
+| --- | --- |
+| `login_file` | Caminho local, fora do Git, para os perfis criados por `mysql_config_editor`; pode usar `~` |
+| `monitoring_login_path` | Nome do perfil de Health Check, Audit e leituras do DBA |
+| `refactor_login_path` | Nome do perfil separado de Refactor para `sakila_dev` |
+| `expected_port` | Porta real do MySQL; use o mesmo número em `configure-db --port` |
+| `ssl_mode` e `ssl_ca` | TLS obrigatório; configure a CA ao usar `VERIFY_CA` ou `VERIFY_IDENTITY` |
+| `target_label` | Rótulo de exibição do ambiente; o host de conexão é cadastrado no perfil MySQL |
+
+Os nomes dos perfis podem permanecer como no exemplo. Se os mudar no TOML,
+`configure-db` usa os novos nomes. Cadastre primeiro a conta de monitoramento:
 
 ```sh
 uv run --locked agent-monitoring configure-db \
@@ -198,10 +210,15 @@ uv run --locked agent-monitoring configure-db \
 ```
 
 Esperado: o cliente pede a senha interativamente e grava o perfil local. O
-agente não lê sua senha. Para Refactor, repita com `--role refactor` e a conta
-restrita a `sakila_dev`. Não configure o perfil `audit-lab` ou `workload` com a
-conta de monitoramento. Esses perfis são para tarefas de laboratório com
-autorização específica.
+agente não lê sua senha. Para Refactor, use outra conta, restrita a `sakila_dev`:
+
+```sh
+uv run --locked agent-monitoring configure-db --role refactor \
+  --host SEU_HOST_MYSQL --port 3306 --user SEU_USUARIO_REFACTOR
+```
+
+Não configure os perfis `audit-lab` ou `workload` com a conta de monitoramento.
+Eles são para tarefas de laboratório com autorização específica.
 
 ```sh
 uv run --locked agent-monitoring doctor
@@ -209,9 +226,8 @@ uv run --locked agent-monitoring db-check
 uv run --locked agent-monitoring db-check --role refactor
 ```
 
-Esperado: todos os itens necessários são `true`. Doctor verifica referências e
-binários; as coletas seguintes comprovam o acesso. Requisitos de privilégios e
-de serviço estão em [`CONNECTION.md`](CONNECTION.md).
+`doctor` verifica referências e binários, sem conectar ao banco. Requisitos de
+privilégios e de serviço estão em [`CONNECTION.md`](CONNECTION.md).
 `db-check` verifica login, schema, porta e TLS numa transação somente leitura.
 O segundo comando exige o perfil Refactor e `sakila_dev`; pode ser executado
 depois que esse perfil estiver cadastrado. Saída esperada: `status=ok` e
@@ -230,7 +246,70 @@ erros de permissão e domínios inconclusivos antes de considerar a cobertura
 completa. Audit requer MySQL Enterprise Audit configurado; bootstrap não
 habilita plugins, filtros ou usuários.
 
-## 9. Rodar o console integrado
+## 9. Configurar e testar o SMTP opcional
+
+O SMTP é configurado uma vez por clone, em um arquivo local ignorado pelo Git.
+Ele contém host, porta, conta e destinatários; a senha fica no Chaves do macOS
+ou no gerenciador de segredos da instalação Linux. As coletas funcionam sem
+SMTP. Prepare o e-mail antes do console integrado se quiser receber alertas.
+
+```sh
+python3 scripts/smtp_setup.py init
+```
+
+Edite `agents/notification/.notification.local.env` e preencha:
+
+| Chave | Valor |
+| --- | --- |
+| `NOTIFICATION_EMAIL_FROM` | Remetente, igual a `SMTP_USERNAME` |
+| `NOTIFICATION_EMAIL_RECIPIENTS_WARNING` | Destinatários de avisos e do teste, separados por vírgula |
+| `NOTIFICATION_EMAIL_RECIPIENTS_CRITICAL` | Destinatários de alertas críticos, separados por vírgula |
+| `NOTIFICATION_EMAIL_RECIPIENTS_REFACTOR` | Destinatários da conclusão do Refactor; se vazio, usa WARNING |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USE_STARTTLS` | Servidor, porta e STARTTLS conforme o serviço SMTP; Gmail usa 587 e `true` |
+| `SMTP_USERNAME` | Conta de autenticação SMTP; obrigatória neste fluxo integrado |
+| `NOTIFICATION_SMTP_CREDENTIAL_HELPER` | No Linux, caminho absoluto do executável que consulta o segredo; no macOS pode ficar ausente |
+
+Troque todos os endereços `.invalid` usados por endereços reais. Mantenha
+`NOTIFICATION_DELIVERY_ENABLED=false` no arquivo e **não adicione
+`SMTP_PASSWORD`**. `init` cria o arquivo com permissão `0600` e preserva uma
+configuração existente. O formato é uma atribuição `CHAVE=VALOR` por linha,
+sem usar `source` no shell.
+
+No **macOS**, use o mesmo usuário do sistema que executará o projeto. Sem
+helper, Notification procura a senha no Chaves com serviço fixo
+`mysqlconf-notification-smtp` e conta igual a `SMTP_USERNAME`. Cadastre-a com
+um prompt interativo; substitua apenas o endereço no comando:
+
+```sh
+security add-generic-password -U -a "SEU_EMAIL_SMTP" -s mysqlconf-notification-smtp -w
+```
+
+No **Linux**, configure `NOTIFICATION_SMTP_CREDENTIAL_HELPER` com o caminho
+absoluto de um executável do gerenciador de segredos da empresa. O programa
+recebe `--account USUARIO_SMTP`, devolve uma única linha com a senha em stdout
+e sai com código zero. Provisione o segredo no cofre e conceda acesso à mesma
+identidade do sistema que executará o console. Não escreva a senha no script,
+no arquivo local ou na linha de comando. `check` valida o caminho e a permissão
+de execução; não comprova acesso ao cofre. O contrato completo está no
+[guia Notification](../agents/notification/docs/operations.md).
+
+```sh
+python3 scripts/smtp_setup.py check
+python3 scripts/smtp_setup.py send-test --send
+```
+
+`check` deve devolver `status=ready_for_send_test`. Ele valida campos,
+endereços, permissão do arquivo e referência do helper sem consultar o segredo
+nem abrir conexão SMTP. `send-test --send` consulta a senha somente em runtime
+e envia **um e-mail real** identificado como teste aos destinatários WARNING.
+Espere `status=sent` e `delivered=true` e confirme a chegada na caixa de
+entrada; o programa não confirma o recebimento final. A saída não expõe senha
+ou endereços. Envie apenas a destinatários autorizados.
+
+Se não quiser SMTP, pule esta etapa e inicie o console sem
+`AGENT_MONITORING_NOTIFY=true`.
+
+## 10. Rodar o console integrado
 
 Se for executar a simulação de SELECTs, cadastre também uma conta separada
 de somente leitura para a carga. A SELECT conhecida e deliberadamente lenta
@@ -264,43 +343,7 @@ Os botões de carga e DDL mantêm as confirmações e precondições do projeto.
 Não os use como teste de instalação. Health Check e Audit não executam
 mudanças. Refactor recebe somente o fluxo versionado de query lenta via MCP.
 
-## 10. Configurar notificação opcional
-
-O SMTP é configurado uma vez por clone, em um arquivo local ignorado pelo Git.
-Ele contém host, porta, conta e destinatários; a senha fica fora dele. As
-rotinas de monitoramento funcionam sem SMTP.
-
-```sh
-python3 scripts/smtp_setup.py init
-```
-
-Edite `agents/notification/.notification.local.env` e substitua os endereços
-`.invalid` pelo remetente/usuário SMTP e pelos destinatários reais. Defina
-`SMTP_HOST`, `SMTP_PORT` e `SMTP_USE_STARTTLS` conforme o seu servidor. Mantenha
-`NOTIFICATION_DELIVERY_ENABLED=false` no arquivo: a entrega integrada é
-controlada pela sessão operacional, não por uma senha ou chave nele. `init`
-cria o arquivo com permissão `0600` e preserva qualquer configuração existente.
-
-No Linux, informe `NOTIFICATION_SMTP_CREDENTIAL_HELPER` com o caminho absoluto
-de um executável do gerenciador de segredos da empresa. Ele recebe
-`--account USUARIO_SMTP` e fornece a senha apenas ao processo Notification.
-No macOS, sem helper, Notification usa o serviço fixo
-`mysqlconf-notification-smtp` do Chaves para a conta em `SMTP_USERNAME`.
-O contrato do helper e as opções de servidor estão em
-[`agents/notification/docs/operations.md`](../agents/notification/docs/operations.md).
-
-```sh
-python3 scripts/smtp_setup.py check
-python3 scripts/smtp_setup.py send-test --send
-```
-
-`check` valida campos, endereços, permissão do arquivo e referência do helper
-sem consultar o segredo nem abrir conexão SMTP. `send-test --send` envia **um
-e-mail real** identificado como teste aos destinatários WARNING; confirme a chegada na
-caixa de entrada. A saída mostra somente estado e quantidade de destinatários.
-Esse envio real deve ser feito com autorização para os destinatários.
-
-Para a sessão integrada com entrega real:
+Se a etapa 9 passou e esta sessão deve entregar e-mail real, inicie com:
 
 ```sh
 AGENT_MONITORING_NOTIFY=true python3 apps/lab-console/scripts/dev.py --integrated --allow-execute
@@ -322,4 +365,10 @@ edite o mesmo arquivo e repita `check` e `send-test --send`.
 | Falha TLS | Cliente Oracle MySQL, certificado/hostname e CA corretos |
 | Coleta inconclusiva | Recursos e privilégios exigidos pelo domínio |
 | Web sem API | Túnel de ambas as portas e API em loopback |
+| `smtp_config_permissions_insecure` | Aplique `chmod 600 agents/notification/.notification.local.env` no clone |
+| `smtp_addresses_invalid_or_placeholder` ou `smtp_sender_mismatch` | Substitua endereços `.invalid` e iguale remetente a `SMTP_USERNAME` |
+| `smtp_credential_helper_required` | No Linux, configure o caminho absoluto do helper corporativo |
+| `smtp_credential_helper_unavailable` ou `smtp_credential_lookup_failed` | Confira se o helper é executável e se o usuário do processo acessa o cofre |
+| `smtp_keychain_lookup_failed` | No macOS, cadastre o serviço e a conta SMTP no Chaves do usuário que executa o projeto |
+| `smtp_send_test_failed` ou outra falha SMTP | Verifique host, porta, STARTTLS, política do provedor e acesso de rede; repita `send-test --send` |
 | Lockfile desatualizado | Use um checkout íntegro; alterações de dependências exigem `uv lock` pelo mantenedor |

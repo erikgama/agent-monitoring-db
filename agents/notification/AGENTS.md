@@ -62,9 +62,10 @@ Refactor -> MCP central -> DBA + notification -> e-mail de conclusao
 - Para `smtp.gmail.com`, exigir porta 587, STARTTLS, credenciais completas e
   remetente identico ao usuario autenticado.
 - Quando o MCP habilita uma entrega real e `SMTP_PASSWORD` nao foi injetada,
-  somente o runtime do Notification pode resolver a senha no Chaves do macOS,
+  somente o runtime do Notification pode resolver a senha: no Chaves do macOS,
   pelo servico fixo `mysqlconf-notification-smtp` e pela conta de
-  `SMTP_USERNAME`. Audit e MCP nunca leem nem recebem essa senha.
+  `SMTP_USERNAME`, ou no Linux pelo helper corporativo configurado.
+  Audit e MCP nunca leem nem recebem essa senha.
 - Toda conexao SMTP deve possuir timeout explicito. STARTTLS deve validar cadeia
   de certificados e hostname com as autoridades confiaveis do sistema.
 - Nunca registrar senha, token, destinatarios, JSON/HTML integral ou excecao
@@ -88,7 +89,7 @@ Refactor -> MCP central -> DBA + notification -> e-mail de conclusao
 - `tests/`: testes isolados com SMTP falso.
 - `fixtures/`: alertas exclusivamente ficticios para teste e demonstracao.
 - `docs/`: operacao detalhada e limites do canal.
-- `reports/`: evidencias historicas sanitizadas de validacao.
+- `reports/`: evidencias operacionais locais, ignoradas pelo Git.
 
 A interface oficial em runtime e `notification.build_dispatcher()`, chamada
 somente pelo MCP central. O comando manual oficial e:

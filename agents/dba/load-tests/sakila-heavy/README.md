@@ -228,5 +228,5 @@ estruturada; o Markdown é o resumo para leitura. Confira sempre:
 - distribuição entre INSERT, READ, UPDATE e DELETE;
 - retries, mensagens de erro e falhas de cleanup.
 
-Consulte também [`reports/README.md`](reports/README.md) para os nomes e a forma
-de interpretar os artefatos.
+Os artefatos de `reports/` são locais e ignorados pelo Git. Compare o JSON e o
+Markdown gerados pela mesma execução para interpretar os resultados.

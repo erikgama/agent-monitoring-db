@@ -17,6 +17,22 @@ Instalação e testes executados em Oracle Linux 9, a partir de um clone novo:
 [`registro da validação`](docs/VALIDATION_VM.md). Os testes sem banco usam
 fixtures; login LLM, conexão MySQL e entrega SMTP têm verificações próprias.
 
+### Onde configurar cada acesso
+
+| O que configurar | Onde fica neste clone | Como verificar |
+| --- | --- | --- |
+| Perfis, porta e TLS do MySQL; provedor e modelos LLM | `config/agent-monitoring.toml`, criado pelo bootstrap | `uv run --locked agent-monitoring doctor`, `db-check` e `llm-check` |
+| Host, usuário e senha do MySQL | Arquivo de login local apontado por `database.login_file`; cadastrado pelo `configure-db` no prompt do `mysql_config_editor` | `uv run --locked agent-monitoring db-check` para cada papel necessário |
+| Login do Codex, Claude Code ou Kimi Code | Armazenamento do próprio cliente, por usuário e máquina | `uv run --locked agent-monitoring llm-check` |
+| MCP dos clientes LLM | Launchers locais gerados por `uv run --locked agent-monitoring configure-clients` | `/mcp` no cliente |
+| Servidor, remetente e destinatários SMTP | `agents/notification/.notification.local.env`, criado por `python3 scripts/smtp_setup.py init` | `python3 scripts/smtp_setup.py check` |
+| Senha SMTP | Chaves do macOS ou helper do gerenciador de segredos no Linux | `python3 scripts/smtp_setup.py send-test --send` e recebimento na caixa |
+
+Nenhuma senha entra no TOML, no arquivo SMTP ou no Git. A configuração do banco
+e do LLM é compartilhada pelos agentes; Notification usa o arquivo SMTP local.
+Siga o [guia completo, na ordem](docs/SETUP.md) para preencher e verificar cada
+referência.
+
 ## 1. Pré-requisitos
 
 Linux ou macOS (Windows via WSL2), Git, Python para iniciar o bootstrap, `uv`,
@@ -102,15 +118,7 @@ python3 scripts/check.py
 **Verificação:** todas as suítes Python, lint, tipos e build Web devem passar.
 Os testes usam bancos/SMTP simulados. CI executa o mesmo caminho em Linux.
 
-## 7. Ativar o modo integrado
-
-Com os perfis, TLS, schemas e LLM disponíveis, siga a validação incremental em
-[`docs/SETUP.md`](docs/SETUP.md). Primeiro faça uma coleta somente leitura de
-Health Check e Audit; depois inicie o console integrado. Demonstrações que
-executam carga, DML ou DDL exigem tarefa e autorização específicas, conforme
-`AGENTS.md`; não pertencem ao bootstrap nem aos testes de instalação.
-
-## 8. Configurar e testar e-mail
+## 7. Configurar e testar e-mail (opcional)
 
 SMTP é opcional e local a cada clone. Execute `python3 scripts/smtp_setup.py init`,
 preencha host, porta, remetente e destinatários no arquivo criado em
@@ -121,6 +129,15 @@ arquivo nem no Git. Depois execute `python3 scripts/smtp_setup.py check` e
 e-mail real identificado como teste para validar o recebimento. O
 [passo a passo de SMTP](docs/SETUP.md) inclui o formato do helper e a ativação
 no console integrado.
+
+## 8. Ativar o modo integrado
+
+Com os perfis, TLS, schemas e LLM disponíveis, siga a validação incremental em
+[`docs/SETUP.md`](docs/SETUP.md). Configure o SMTP antes de iniciar o console
+se quiser receber e-mails. Primeiro faça uma coleta somente leitura de Health
+Check e Audit; depois inicie o console integrado. Demonstrações que executam
+carga, DML ou DDL exigem tarefa e autorização específicas, conforme `AGENTS.md`;
+não pertencem ao bootstrap nem aos testes de instalação.
 
 ## Estrutura
 

@@ -1,10 +1,19 @@
 # Acesso central ao banco
 
-A única fonte de configuração é `config/agent-monitoring.toml`, criado por
-`agent-monitoring init`. Para usar outro local, defina apenas
+A única fonte de configuração do banco e do LLM é
+`config/agent-monitoring.toml`, criado por `python3 scripts/bootstrap.py` ou
+`uv run --locked agent-monitoring init`. Para usar outro local, defina
 `AGENT_MONITORING_CONFIG=/caminho/agent-monitoring.toml`. Caminhos relativos no
 TOML são resolvidos a partir da pasta desse arquivo, independentemente do
 diretório atual do agente.
+
+Na seção `[database]`, `login_file` aponta para o arquivo local de perfis;
+`monitoring_login_path`, `refactor_login_path`, `workload_login_path` e
+`audit_lab_login_path` são **nomes de perfis dentro dele**, não nomes de
+usuários MySQL. `expected_port` deve coincidir com a porta cadastrada em cada
+perfil e `ssl_mode`/`ssl_ca` definem o TLS. `target_label` é só um rótulo para
+relatórios; o host e o usuário de conexão são cadastrados interativamente com
+`configure-db`. Veja os comandos completos em [SETUP.md](SETUP.md).
 
 O resolvedor em `agent_monitoring/config.py` é instalado como dependência de
 todos os módulos. Ele lê somente o TOML não secreto e nunca abre o perfil MySQL.
@@ -26,7 +35,7 @@ As antigas variáveis de conexão específicas por agente não substituem o TOML
 
 ```sh
 uv run --locked agent-monitoring configure-db --role refactor \
-  --host SEU_HOST_MYSQL --user SEU_USUARIO_REFACTOR
+  --host SEU_HOST_MYSQL --port 3306 --user SEU_USUARIO_REFACTOR
 ```
 
 TLS é obrigatório: `REQUIRED`, `VERIFY_CA` ou `VERIFY_IDENTITY`. Prefira

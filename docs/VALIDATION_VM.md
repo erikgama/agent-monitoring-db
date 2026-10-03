@@ -130,7 +130,7 @@ manual com fixture fictícia. A senha foi resolvida exclusivamente pelo runtime
 Notification no gerenciador de segredos existente, através de um helper
 temporário e transporte SSH; nenhum segredo foi gravado no clone. Para operação
 Linux independente deste computador, configure um helper permanente do seu
-gerenciador de segredos conforme a etapa 10 de `SETUP.md`.
+gerenciador de segredos conforme a etapa 9 de `SETUP.md`.
 
 Correções encontradas nesta execução:
 
@@ -213,7 +213,7 @@ o teste isolado e as verificações sem banco cobrem a alteração de perfil.
 
 A entrega SMTP manual foi aceita na VM na validação anterior. Para e-mail
 automático contínuo no Linux, ainda é necessário provisionar o helper do
-gerenciador de segredos corporativo descrito na etapa 10 de `SETUP.md`.
+gerenciador de segredos corporativo descrito na etapa 9 de `SETUP.md`.
 Claude Code e Kimi Code continuam sem login e inferência reais nesta VM; os
 adapters foram verificados com respostas simuladas.
 

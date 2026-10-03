@@ -1,4 +1,4 @@
-# MySQL Conf Notification
+# Agent Monitoring Notification
 
 Entrega segura por e-mail de alertas e conclusoes que o MCP central já recebeu
 e validou nos contratos do Health Check, Audit Security ou Refactor. O
@@ -59,12 +59,16 @@ o canal e os destinatários locais pela severidade recebida e realiza no máximo
 uma transação SMTP, sem retry. Destinatários presentes no payload são ignorados.
 O Advisor nunca recalcula a severidade definida pelo agente produtor.
 
-Uma entrega integrada real exige `NOTIFICATION_DELIVERY_ENABLED=true` no
-processo, configuração não secreta válida em `.notification.local.env` e a senha
-SMTP disponível no Chaves do macOS. Para Gmail, a política exige porta 587,
+Uma entrega integrada real exige `AGENT_MONITORING_NOTIFY=true` ao iniciar o
+console, configuração não secreta válida em `.notification.local.env` e a senha
+SMTP disponível no Chaves do macOS ou no cofre corporativo via helper Linux.
+O launcher define `NOTIFICATION_DELIVERY_ENABLED=true` apenas no processo.
+Para Gmail, a política exige porta 587,
 STARTTLS, validação de certificado e hostname e remetente igual ao usuário
 autenticado. Somente o runtime do Notification resolve a senha pelo serviço
-`mysqlconf-notification-smtp`; Health Check, Audit e MCP não recebem o segredo.
+`mysqlconf-notification-smtp` no macOS; Health Check, Audit e MCP não recebem o
+segredo. O [guia de instalação](../../docs/SETUP.md) ensina a configurar e
+testar cada opção.
 
 ## Laboratórios integrados
 
@@ -133,7 +137,7 @@ A suíte usa SMTP falso e não abre rede nem envia e-mail real.
 - `fixtures/`: alertas fictícios;
 - `tests/`: testes isolados;
 - `docs/`: documentação operacional;
-- `reports/`: evidências históricas sanitizadas.
+- `reports/`: evidências operacionais locais, ignoradas pelo Git.
 
 Não existe `advisor/results/`: por segurança, este agente não persiste alertas,
 payloads, anexos nem decisões de roteamento.
@@ -141,8 +145,8 @@ payloads, anexos nem decisões de roteamento.
 ## Documentação avançada
 
 - [Guia operacional completo](docs/operations.md)
-- [Autenticação SMTP local](reports/2026-09-15-smtp-authentication.md)
-- [Demonstração de latência](reports/2026-09-15-query-latency-email-demo.md)
+- [Configuração de banco, LLM e SMTP](../../docs/SETUP.md)
+- [Validação de clone e envio SMTP em VM](../../docs/VALIDATION_VM.md)
 
 Toda configuração detalhada, gates de envio e procedimento do Chaves do macOS
 estão no guia operacional. Nenhum segredo deve ser colocado no repositório.
