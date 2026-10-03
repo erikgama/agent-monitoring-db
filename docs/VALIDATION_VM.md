@@ -216,3 +216,25 @@ automático contínuo no Linux, ainda é necessário provisionar o helper do
 gerenciador de segredos corporativo descrito na etapa 10 de `SETUP.md`.
 Claude Code e Kimi Code continuam sem login e inferência reais nesta VM; os
 adapters foram verificados com respostas simuladas.
+
+## Entrega real de e-mail confirmada em 3 de outubro de 2026
+
+Após uma revisão que havia executado apenas `dry_run`, foi feito um envio SMTP
+real a partir da VM, com senha recuperada do Chaves do macOS e injetada somente
+na memória do processo de teste. O comando devolveu `sent` para dois
+destinatários. A mensagem apareceu como não lida na Inbox Oracle às
+`15:23:22Z`.
+
+Em seguida, três contratos fictícios foram enviados pelo MCP central em
+transporte stdio, com inboxes DBA temporárias e um helper SMTP temporário sem
+segredo em arquivo. Para Health Check, Audit e conclusão do Refactor, o MCP
+devolveu `accepted=true`, o DBA registrou o evento e Notification devolveu
+`sent` e `delivered=true`. As três mensagens apareceram como não lidas na
+Inbox Oracle às `15:27:40Z`, `15:27:45Z` e `15:27:42Z`, respectivamente.
+Nenhum DDL ou workload real foi executado nessa prova; os eventos eram
+fixtures e o helper temporário foi removido ao final.
+
+Essa prova confirma o roteamento MCP, SMTP e recebimento na caixa testada.
+Para operação automática contínua após o teste, a VM ainda precisa de um
+helper persistente ligado ao gerenciador de segredos corporativo e da opção
+`AGENT_MONITORING_NOTIFY=true` no processo integrado.
