@@ -248,6 +248,10 @@ local preserva permissão `0600`; o script não armazena nem imprime a senha.
 `check` não consulta o segredo nem abre SMTP. `send-test --send` usa o próprio
 runtime Notification e requer envio explícito.
 
+Depois dessa prova, o assunto e o corpo de `send-test --send` foram marcados
+como **TESTE SMTP — sem incidente real**. O contrato sintético continuou válido,
+e um novo envio real chegou à caixa Oracle às **16:25:25Z** com essa marcação.
+
 Na máquina macOS, `check` identificou o Chaves e `send-test --send` devolveu
 `sent`, `delivered=true` e dois destinatários. A mensagem chegou à caixa
 Oracle às **15:59:51Z**. Na VM Linux, após `git pull --ff-only`, `check`

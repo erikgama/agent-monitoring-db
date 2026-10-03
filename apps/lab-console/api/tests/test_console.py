@@ -1190,5 +1190,8 @@ def test_notification_dispatch_calls_only_existing_runtime(
     monkeypatch.setitem(sys.modules, "notification.runtime", fake)
     monkeypatch.setenv("NOTIFICATION_DELIVERY_ENABLED", "true")
     assert main() == 0
-    assert calls == [{"severity": "warning"}]
+    assert len(calls) == 1
+    assert calls[0]["severity"] == "warning"
+    assert calls[0]["environment"] == "smtp-test"
+    assert calls[0]["title"] == "TESTE SMTP — sem incidente real"
     assert '"status": "sent"' in capsys.readouterr().out

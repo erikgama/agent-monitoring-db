@@ -296,7 +296,7 @@ python3 scripts/smtp_setup.py send-test --send
 
 `check` valida campos, endereços, permissão do arquivo e referência do helper
 sem consultar o segredo nem abrir conexão SMTP. `send-test --send` envia **um
-e-mail real** de aviso aos destinatários WARNING; confirme também a chegada na
+e-mail real** identificado como teste aos destinatários WARNING; confirme a chegada na
 caixa de entrada. A saída mostra somente estado e quantidade de destinatários.
 Esse envio real deve ser feito com autorização para os destinatários.
 

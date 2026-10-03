@@ -118,8 +118,9 @@ preencha host, porta, remetente e destinatários no arquivo criado em
 gerenciador de segredos no Linux ou o Chaves no macOS. A senha não entra no
 arquivo nem no Git. Depois execute `python3 scripts/smtp_setup.py check` e
 `python3 scripts/smtp_setup.py send-test --send`; o segundo comando envia um
-e-mail real para validar o recebimento. O [passo a passo de SMTP](docs/SETUP.md)
-inclui o formato do helper e a ativação no console integrado.
+e-mail real identificado como teste para validar o recebimento. O
+[passo a passo de SMTP](docs/SETUP.md) inclui o formato do helper e a ativação
+no console integrado.
 
 ## Estrutura
 
