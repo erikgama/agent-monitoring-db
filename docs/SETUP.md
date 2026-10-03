@@ -266,19 +266,50 @@ mudanças. Refactor recebe somente o fluxo versionado de query lenta via MCP.
 
 ## 10. Configurar notificação opcional
 
-Copie `agents/notification/.env.example` para
-`agents/notification/.notification.local.env` e configure somente os campos
-não secretos e destinatários, mantendo `NOTIFICATION_DELIVERY_ENABLED=false`.
-As rotinas de monitoramento funcionam sem essa configuração.
+O SMTP é configurado uma vez por clone, em um arquivo local ignorado pelo Git.
+Ele contém host, porta, conta e destinatários; a senha fica fora dele. As
+rotinas de monitoramento funcionam sem SMTP.
 
-Nos scripts de laboratório, entrega real exige a opção explícita de ambiente
-`AGENT_MONITORING_NOTIFY=true`. No macOS, Notification pode resolver sua própria
-senha no Keychain pelo serviço legado documentado. Em Linux integrado, configure
-`NOTIFICATION_SMTP_CREDENTIAL_HELPER` com o caminho absoluto de um executável
-do seu gerenciador de segredos; somente Notification o chama. Para execução
-isolada, `SMTP_PASSWORD` pode ser injetado só no processo Notification.
-Consulte `agents/notification/docs/operations.md`. E-mail real deve
-ser validado numa tarefa explicitamente autorizada para os destinatários.
+```sh
+python3 scripts/smtp_setup.py init
+```
+
+Edite `agents/notification/.notification.local.env` e substitua os endereços
+`.invalid` pelo remetente/usuário SMTP e pelos destinatários reais. Defina
+`SMTP_HOST`, `SMTP_PORT` e `SMTP_USE_STARTTLS` conforme o seu servidor. Mantenha
+`NOTIFICATION_DELIVERY_ENABLED=false` no arquivo: a entrega integrada é
+controlada pela sessão operacional, não por uma senha ou chave nele. `init`
+cria o arquivo com permissão `0600` e preserva qualquer configuração existente.
+
+No Linux, informe `NOTIFICATION_SMTP_CREDENTIAL_HELPER` com o caminho absoluto
+de um executável do gerenciador de segredos da empresa. Ele recebe
+`--account USUARIO_SMTP` e fornece a senha apenas ao processo Notification.
+No macOS, sem helper, Notification usa o serviço fixo
+`mysqlconf-notification-smtp` do Chaves para a conta em `SMTP_USERNAME`.
+O contrato do helper e as opções de servidor estão em
+[`agents/notification/docs/operations.md`](../agents/notification/docs/operations.md).
+
+```sh
+python3 scripts/smtp_setup.py check
+python3 scripts/smtp_setup.py send-test --send
+```
+
+`check` valida campos, endereços, permissão do arquivo e referência do helper
+sem consultar o segredo nem abrir conexão SMTP. `send-test --send` envia **um
+e-mail real** de aviso aos destinatários WARNING; confirme também a chegada na
+caixa de entrada. A saída mostra somente estado e quantidade de destinatários.
+Esse envio real deve ser feito com autorização para os destinatários.
+
+Para a sessão integrada com entrega real:
+
+```sh
+AGENT_MONITORING_NOTIFY=true python3 apps/lab-console/scripts/dev.py --integrated --allow-execute
+```
+
+O arquivo local continua com `NOTIFICATION_DELIVERY_ENABLED=false`; o launcher
+habilita Notification em memória apenas quando a sessão usa
+`AGENT_MONITORING_NOTIFY=true`. Se mudar servidor, conta ou destinatários,
+edite o mesmo arquivo e repita `check` e `send-test --send`.
 
 ## Problemas comuns
 

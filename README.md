@@ -110,6 +110,17 @@ Health Check e Audit; depois inicie o console integrado. Demonstrações que
 executam carga, DML ou DDL exigem tarefa e autorização específicas, conforme
 `AGENTS.md`; não pertencem ao bootstrap nem aos testes de instalação.
 
+## 8. Configurar e testar e-mail
+
+SMTP é opcional e local a cada clone. Execute `python3 scripts/smtp_setup.py init`,
+preencha host, porta, remetente e destinatários no arquivo criado em
+`agents/notification/.notification.local.env`, e configure a referência ao
+gerenciador de segredos no Linux ou o Chaves no macOS. A senha não entra no
+arquivo nem no Git. Depois execute `python3 scripts/smtp_setup.py check` e
+`python3 scripts/smtp_setup.py send-test --send`; o segundo comando envia um
+e-mail real para validar o recebimento. O [passo a passo de SMTP](docs/SETUP.md)
+inclui o formato do helper e a ativação no console integrado.
+
 ## Estrutura
 
 | Caminho | Função |

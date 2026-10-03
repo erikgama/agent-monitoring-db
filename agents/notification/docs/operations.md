@@ -52,6 +52,12 @@ operador e usada.
 
 ## Configuracao de e-mail
 
+Para preparar um clone, use `python3 scripts/smtp_setup.py init`, configure
+`agents/notification/.notification.local.env`, execute
+`python3 scripts/smtp_setup.py check` e, com destinatarios autorizados,
+`python3 scripts/smtp_setup.py send-test --send`. O ultimo comando envia um
+e-mail real. O [passo a passo](../../../docs/SETUP.md) detalha cada etapa.
+
 ### Linux e gerenciador de segredos corporativo
 
 No fluxo integrado Linux, configure a referencia nao secreta
