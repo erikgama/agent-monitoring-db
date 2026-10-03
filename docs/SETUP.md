@@ -232,6 +232,20 @@ habilita plugins, filtros ou usuários.
 
 ## 9. Rodar o console integrado
 
+Se for executar a simulação de SELECTs, cadastre também uma conta separada
+de somente leitura para a carga. A SELECT conhecida e deliberadamente lenta
+usa esse perfil, enquanto o coletor do Slow Query Log continua usando o
+perfil de monitoramento:
+
+```sh
+uv run --locked agent-monitoring configure-db --role workload \
+  --host SEU_HOST_MYSQL --port 3306 --user SEU_USUARIO_CARGA
+uv run --locked agent-monitoring db-check --role workload
+```
+
+Esperado: `status=ok`, `database=sakila` e `read_only`, `tls` e
+`port_matches` iguais a `true`.
+
 Primeiro verifique o runner sem autorizar execução:
 
 ```sh

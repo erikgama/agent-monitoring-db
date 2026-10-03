@@ -187,3 +187,32 @@ rota antiga foi consultada por terceiros.
 Na VM, os dois arquivos locais de configuração foram restringidos a `0600` e os
 diretórios de resultados operacionais e seus arquivos a `0700`/`0600`. O serviço
 integrado de teste permanece encerrado; o serviço público demo está ativo.
+
+## Revalidação do clone em 3 de outubro de 2026
+
+Na VM Oracle Linux, `scripts/check.py` passou com **319 testes Python**, Ruff,
+mypy, lint, tipos e build Web. Em seguida, `scripts/e2e.py` passou nos **7
+cenários Chromium**. `agent-monitoring llm-check` e as **6 chamadas reais** de
+`scripts/check-llm.py --execute` passaram com Codex e entradas sintéticas.
+Essas chamadas não acessam o banco nem publicam alertas.
+
+Os perfis `health-check`, `refactor` e `workload` passaram em `db-check` com
+TLS, schema e porta corretos. Health Check coletou um relatório real às
+`14:35:26.497Z`, com nove domínios disponíveis e estado geral `critical`;
+Audit coletou às `14:35:26.823Z`, com os dez domínios disponíveis e coleta
+`complete`. O estado `critical` contém contadores acumulados e não comprova
+um incidente recente sem comparação entre snapshots.
+
+A revisão do fluxo de instalação identificou que a SELECT deliberadamente
+lenta da simulação usava `monitoring_login_path`. O executor foi corrigido para
+`workload_login_path`, como as demais cargas de leitura, e `SETUP.md` passou a
+mostrar o cadastro e o `db-check` desse perfil. Um teste isolado confirmou que
+referência, ambiente e comando MySQL usam o perfil de carga. O fluxo integrado
+com SELECTs, Refactor e e-mail havia passado antes dessa correção; depois dela,
+o teste isolado e as verificações sem banco cobrem a alteração de perfil.
+
+A entrega SMTP manual foi aceita na VM na validação anterior. Para e-mail
+automático contínuo no Linux, ainda é necessário provisionar o helper do
+gerenciador de segredos corporativo descrito na etapa 10 de `SETUP.md`.
+Claude Code e Kimi Code continuam sem login e inferência reais nesta VM; os
+adapters foram verificados com respostas simuladas.

@@ -45,7 +45,7 @@ def _sanitize_error(value: str) -> str:
 
 
 def _connection_settings() -> tuple[Path, str]:
-    settings = database_settings("health-check")
+    settings = database_settings("workload")
     login_file = settings.login_file
     login_path = settings.login_path
     if not login_file.is_file():
@@ -56,13 +56,13 @@ def _connection_settings() -> tuple[Path, str]:
 
 
 def _mysql_environment(login_file: Path) -> dict[str, str]:
-    environment = database_settings("health-check").environment()
+    environment = database_settings("workload").environment()
     environment["MYSQL_TEST_LOGIN_FILE"] = str(login_file)
     return environment
 
 
 def _mysql_command(login_path: str, sql: str) -> list[str]:
-    settings = database_settings("health-check")
+    settings = database_settings("workload")
     return [
         settings.mysql_binary,
         f"--login-path={login_path}",
