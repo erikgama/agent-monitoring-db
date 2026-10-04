@@ -144,9 +144,13 @@ class AuditSecurityTests(unittest.TestCase):
             decision_for(report),
             "test",
             agent_started_at=datetime(2026, 9, 16, 12, 0, tzinfo=UTC),
+            llm_model="claude-test-model",
+            llm_provider="claude",
         )
         self.assertEqual(alert["source"], "audit-security")
         self.assertEqual(alert["metadata"]["decision_owner"], "audit-luna")
+        self.assertEqual(alert["metadata"]["model"], "claude-test-model")
+        self.assertEqual(alert["metadata"]["provider"], "claude")
         self.assertNotIn("DROP TABLE", json.dumps(alert))
 
     def test_agent_cannot_select_evidence_not_present_in_report(self) -> None:

@@ -244,6 +244,7 @@ def run_agent(
                     )
                 )
                 _validate_analysis(analysis)
+                selected_llm = llm_settings("analysis")
                 publications: list[dict[str, Any]] = []
                 for decision in analysis["alerts"]:
                     alert = build_agent_alert(
@@ -253,6 +254,8 @@ def run_agent(
                         selected_environment,
                         agent_started_at=agent_started_at,
                         detected_at=now_fn(),
+                        llm_model=selected_llm.model or "client-default",
+                        llm_provider=selected_llm.provider,
                     )
                     key = alert["dedupe_key"]
                     if selected_state.was_published(key):
@@ -279,9 +282,9 @@ def run_agent(
                     "analyzed_at": _iso(now_fn()),
                     "source_audit_id": audit_id,
                     "source_collected_at": report.get("collected_at"),
-                    "model": llm_settings("analysis").model or "client-default",
-                    "provider": llm_settings("analysis").provider,
-                    "reasoning_effort": llm_settings("analysis").effort,
+                    "model": selected_llm.model or "client-default",
+                    "provider": selected_llm.provider,
+                    "reasoning_effort": selected_llm.effort,
                     "decision_owner": "audit-luna",
                     "analysis": analysis,
                     "publications": publications,

@@ -41,7 +41,7 @@ class McpPublisherEnvironmentTests(unittest.TestCase):
         self.assertEqual(parameters.env["MCP_DBA_ENABLED"], "true")
         self.assertEqual(parameters.env["MCP_DBA_ALERTS_DIR"], "/tmp/dba-alert-test")
         self.assertEqual(parameters.env["NOTIFICATION_DELIVERY_ENABLED"], "true")
-        self.assertEqual(parameters.env["SMTP_PASSWORD"], "test-secret")
+        self.assertNotIn("SMTP_PASSWORD", parameters.env)
         self.assertEqual(
             parameters.env["NOTIFICATION_SMTP_CREDENTIAL_HELPER"],
             "/tmp/example-secret-helper",

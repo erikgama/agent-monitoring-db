@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agent-monitoring-mcp-central"
 version = "0.1.0"
-description = "MCP central minimo para validacao de alertas do MySQL Conf"
+description = "MCP central para validacao de alertas do Agent Monitoring DB"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["agent-monitoring", 
@@ -46,4 +46,3 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["B", "E", "F", "I", "UP"]
-

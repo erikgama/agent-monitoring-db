@@ -1,8 +1,25 @@
 # Validação de instalação e portabilidade
 
-Executada em **2 de outubro de 2026**, a partir de um clone do GitHub.
-Código validado: [`610be18`](https://github.com/erikgama/agent-monitoring-db/commit/610be18).
+Validação inicial executada em **2 de outubro de 2026**, a partir de um clone do GitHub.
+Código dessa primeira rodada: [`610be18`](https://github.com/erikgama/agent-monitoring-db/commit/610be18).
 O repositório foi publicado como privado; quem clonar precisa de acesso ao GitHub.
+
+## Revisão de publicação em 3 de outubro de 2026
+
+O clone da VM foi atualizado por fast-forward até
+[`151f1d6`](https://github.com/erikgama/agent-monitoring-db/commit/151f1d6),
+sem alterações locais. `scripts/check.py` passou na VM, incluindo testes Python,
+Ruff, tipos e build Web. `doctor` confirmou as dependências; `db-check` para
+Health Check e Refactor confirmou TLS, porta e os schemas `sakila` e
+`sakila_dev` em transações somente leitura. `llm-check` fez uma chamada real
+bem-sucedida com Codex. O [CI desse commit](https://github.com/erikgama/agent-monitoring-db/actions/runs/37152130546)
+também passou, incluindo navegador em demo isolada.
+
+Nesta revisão não houve novo envio SMTP. O `smtp_setup.py check` retornou
+`smtp_credential_helper_required` na VM: o helper temporário da validação
+anterior foi removido, e o envio contínuo no Linux depende da integração com o
+cofre corporativo descrita em [`SETUP.md`](SETUP.md). Claude Code e Kimi Code
+continuam sem autenticação e inferência reais confirmadas nessa VM.
 
 ## VM: Oracle Linux 9
 

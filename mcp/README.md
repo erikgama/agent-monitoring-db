@@ -1,4 +1,4 @@
-# MySQL Conf MCP Central
+# Agent Monitoring DB · MCP central
 
 > Guia atual de instalação: README.md da raiz e docs/SETUP.md.
 > Nos exemplos abaixo, defina `AGENT_MONITORING_ROOT="$(pwd)"` na raiz do clone.
@@ -28,7 +28,7 @@ tools aplica a proposta em produção.
 
 ```text
 MySQL HeatWave
-   |                 coleta e decisão determinística
+   |             coleta read-only; decisão do advisor com LLM configurado
    +-> Health Check ----------------------------------+
    |                                                  |
    +-> Enterprise Audit -> Audit Security ------------+-> MCP incident_raise
@@ -41,12 +41,12 @@ MySQL HeatWave
 
 Responsabilidades:
 
-- **Health Check** coleta sinais de saúde e performance em modo read-only,
-  decide findings e severidade por regras determinísticas e produz
-  `health_check_alert.v1`.
-- **Audit Security** coleta e normaliza evidências do Enterprise Audit em modo
-  read-only, decide findings e severidade por regras determinísticas e produz
-  `audit_security_alert.v1`.
+- **Health Check** coleta sinais de saúde e performance em modo read-only. O
+  advisor com o LLM configurado aplica a regra versionada, valida a decisão e
+  produz `health_check_alert.v1` quando há alerta.
+- **Audit Security** coleta e mascara evidências do Enterprise Audit em modo
+  read-only. O advisor com o LLM configurado aplica a regra versionada, valida
+  a decisão e produz `audit_security_alert.v1` quando há alerta.
 - **MCP central** revalida o contrato e encaminha o alerta. Ele não determina
   saúde, não recalcula severidade e não interpreta o significado operacional do
   finding.
@@ -102,11 +102,18 @@ A entrada possui exatamente um argumento:
     "detected_at": "ISO 8601 UTC",
     "environment": "identificador-logico",
     "source": "health-check",
-    "severity": "warning",
+    "severity": "critical",
     "category": "query_latency",
     "title": "titulo curto",
     "summary": "resumo",
-    "findings": [],
+    "findings": [{
+      "check_id": "health-check-luna.select-latency.p99-gt-2s",
+      "metric": "p99_seconds",
+      "observed_value": 3.2,
+      "threshold": 2.0,
+      "unit": "seconds",
+      "evidence": {}
+    }],
     "dedupe_key": "chave-estavel",
     "report": {
       "json": {},
@@ -119,16 +126,23 @@ A entrada possui exatamente um argumento:
 }
 ```
 
-O exemplo é apenas estrutural. O payload completo deve obedecer ao JSON Schema
-do contrato selecionado. Consulte também
+O exemplo mostra somente a estrutura; os UUIDs, horários e o relatório completo
+precisam ser reais e coerentes. Não envie os placeholders à tool. O payload
+deve obedecer ao JSON Schema do contrato selecionado. Consulte também
 [`docs/tool-catalog.md`](docs/tool-catalog.md).
 
 ### Contratos suportados
 
-| Contrato | Dono canônico | Origem obrigatória | Categorias atuais |
+| Contrato | Dono canônico | Origem obrigatória | Categorias admitidas pelo schema |
 |---|---|---|---|
 | `health_check_alert.v1` | Health Check | `health-check` | `deadlock`, `lock_wait`, `query_latency`, `connections`, `innodb`, `replication`, `database_error` |
 | `audit_security_alert.v1` | Audit Security | `audit-security` | `destructive_ddl`, `schema_change` |
+
+Na implementação atual, o advisor Health Check emite somente `query_latency`
+crítico para a SELECT monitorada. As demais categorias Health estão previstas
+no schema, mas não possuem produtores de alerta neste fluxo. O Audit emite as
+duas categorias da tabela apenas para os eventos bloqueados definidos em suas
+regras.
 
 Os contratos canônicos permanecem nos produtores:
 
@@ -299,6 +313,7 @@ Todas as rotas começam desabilitadas.
 | `SMTP_PORT` | `587` | Porta SMTP |
 | `SMTP_USERNAME` | vazio | Usuário SMTP |
 | `SMTP_USE_STARTTLS` | `true` | Habilita STARTTLS |
+| `NOTIFICATION_SMTP_CREDENTIAL_HELPER` | vazio | No Linux, executável local que obtém a senha no cofre |
 
 Para `warning` e `critical`, a lista correspondente de destinatários deve
 existir mesmo em `dry_run`; caso contrário, Notification retorna
@@ -306,20 +321,14 @@ existir mesmo em `dry_run`; caso contrário, Notification retorna
 
 ### Credencial SMTP no ambiente local
 
-O MCP não consulta o Chaves do macOS e seu código não lê `SMTP_PASSWORD`. No
-fluxo local vigente do Audit, somente o runtime do Notification resolve a senha
-imediatamente antes da entrega, usando o serviço fixo
-`mysqlconf-notification-smtp` e a conta definida em `SMTP_USERNAME`.
+O MCP não consulta credenciais SMTP. Somente o runtime do Notification resolve
+a senha imediatamente antes da entrega: no macOS, pelo Chaves com o serviço
+legado fixo `mysqlconf-notification-smtp` e a conta `SMTP_USERNAME`; no Linux,
+pelo executável indicado em `NOTIFICATION_SMTP_CREDENTIAL_HELPER`. Health Check
+e Audit não repassam `SMTP_PASSWORD` ao subprocesso MCP.
 
 Não configure destinatários ou senha dentro do alerta. Não versione senha,
 `.env` real ou conteúdo do Chaves.
-
-> **Compatibilidade conhecida:** o cliente MCP do Health Check ainda inclui
-> `SMTP_PASSWORD` em sua allowlist de ambiente do subprocesso. O MCP não usa a
-> variável, mas essa passagem deve ser removida para que o Health Check tenha a
-> mesma fronteira estrita já aplicada pelo Audit. Até essa correção, não injete
-> `SMTP_PASSWORD` no processo do Health Check; prefira a resolução pelo runtime
-> do Notification.
 
 ## Instalação e execução
 
@@ -327,13 +336,13 @@ Pré-requisitos: Python 3.11 ou superior e `uv`.
 
 ```sh
 cd "${AGENT_MONITORING_ROOT}/mcp"
-uv sync --extra dev
+uv sync --locked --extra dev
 ```
 
 Para iniciar manualmente o servidor stdio:
 
 ```sh
-uv run mysqlconf-mcp
+uv run --locked agent-monitoring-mcp
 ```
 
 Esse comando aguarda um cliente MCP em stdin/stdout; não é um shell interativo.
@@ -351,7 +360,7 @@ NOTIFICATION_DELIVERY_ENABLED=false \
 NOTIFICATION_EMAIL_RECIPIENTS_WARNING=warning-operator@example.invalid \
 NOTIFICATION_EMAIL_RECIPIENTS_CRITICAL=critical-operator@example.invalid \
 npx -y @modelcontextprotocol/inspector \
-  uv run --directory mcp mysqlconf-mcp
+  uv run --locked --directory mcp agent-monitoring-mcp
 ```
 
 Use somente fixtures fictícias e diretórios temporários quando não quiser
@@ -374,9 +383,9 @@ devem aparecer nos logs. Valores inválidos são substituídos por `<invalid>`.
 
 ```sh
 cd "${AGENT_MONITORING_ROOT}/mcp"
-uv run python -m unittest discover -s tests -v
-uv run ruff check .
-uv run ruff format --check .
+uv run --locked python -m unittest discover -s tests -v
+uv run --locked ruff check .
+uv run --locked ruff format --check .
 ```
 
 A suíte cobre:

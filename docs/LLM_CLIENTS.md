@@ -61,6 +61,10 @@ nunca é autorização para DDL, DML, e-mail ou infraestrutura.
 `agent_monitoring/llm.py` aplica as escolhas de `config/agent-monitoring.toml`
 a Health Check, Audit, triagem Slow Query Log, Refactor e chat/resumos DBA.
 O Notification continua determinístico e apenas entrega contratos validados.
+Alguns contratos, `check_id` e registros históricos ainda usam os identificadores
+`health-check-luna` e `audit-luna` por compatibilidade. Eles não escolhem o
+provedor: os campos `provider` e `model` da execução indicam o cliente
+configurado de fato.
 
 | Provedor | Execução | Saída |
 | --- | --- | --- |

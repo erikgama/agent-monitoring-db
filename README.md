@@ -63,7 +63,17 @@ python3 scripts/bootstrap.py
 `config/agent-monitoring.toml`. Pode ser repetido; usa os lockfiles e preserva a
 configuração local existente. Um repositório privado exige acesso no GitHub.
 
-## 3. Ver o console sem banco
+## 3. Verificar a instalação sem banco
+
+```sh
+python3 scripts/check.py
+```
+
+**Verificação:** suítes Python, lint, tipos e build Web devem passar. Os testes
+usam bancos/SMTP simulados e não exigem login LLM. O CI executa o mesmo caminho
+em Linux; [`docs/SETUP.md`](docs/SETUP.md) inclui os testes de navegador.
+
+## 4. Ver o console sem banco
 
 ```sh
 python3 apps/lab-console/scripts/dev.py
@@ -73,7 +83,31 @@ Abra **http://localhost:3000**. Este é o modo demo: dados fictícios, sem MySQL
 LLM ou SMTP. `Ctrl-C` encerra os processos. Para uma VM, faça um túnel SSH para
 as portas 3000 e 8000 conforme [`docs/SETUP.md`](docs/SETUP.md).
 
-## 4. Configurar o acesso ao MySQL uma vez
+## 5. Escolher o LLM e conectar o MCP
+
+Instale e autentique Codex, Claude Code ou Kimi Code conforme
+[`docs/SETUP.md`](docs/SETUP.md). Em `config/agent-monitoring.toml`, escolha
+`llm.provider`: `codex`, `claude` ou `kimi`. Configure os modelos nas respectivas
+tabelas; um nome vazio usa o modelo padrão do cliente autenticado. Os advisors
+e o chat DBA usam esse mesmo adapter.
+
+```sh
+uv run --locked agent-monitoring configure-clients
+uv run --locked agent-monitoring llm-check
+```
+
+**Verificação:** `llm-check` faz uma pequena chamada real e deve devolver
+`"status": "ok"`. Ele verifica o login, o modelo e a resposta estruturada;
+consome uma chamada do provedor e não acessa o banco. Para trocar apenas durante
+um teste: `AGENT_MONITORING_LLM_PROVIDER=claude uv run --locked agent-monitoring llm-check`.
+
+O gerador cria launchers locais com o caminho **deste clone** para os três
+clientes. Cada máquina gera seus próprios launchers. Inicie seu cliente na raiz
+do clone e aprove a confiança do projeto/MCP quando o cliente solicitar.
+[`docs/LLM_CLIENTS.md`](docs/LLM_CLIENTS.md) explica as instruções por papel e as
+diferenças entre os clientes.
+
+## 6. Configurar o acesso ao MySQL
 
 Edite as referências em `config/agent-monitoring.toml`. Para cadastrar o perfil:
 
@@ -92,40 +126,21 @@ separados. Veja permissões, TLS e as limitações de schema em
 **Verificação:** `uv run --locked agent-monitoring doctor` mostra os
 pré-requisitos e a existência do perfil, sem ler credenciais nem consultar o
 banco. `uv run --locked agent-monitoring db-check` verifica login, schema,
-porta e TLS numa transação somente leitura; deve devolver `status=ok`.
+porta e TLS numa transação somente leitura; deve devolver `status=ok`. Cadastre
+e verifique também o perfil Refactor seguindo [`docs/SETUP.md`](docs/SETUP.md).
 
-## 5. Escolher o LLM e conectar o MCP
-
-Em `config/agent-monitoring.toml`, escolha `llm.provider`: `codex`, `claude` ou
-`kimi`. Configure os modelos nas respectivas tabelas; um nome vazio usa o modelo
-padrão do cliente autenticado. Os advisors e o chat DBA usam esse mesmo adapter.
+## 7. Verificar as coletas reais somente leitura
 
 ```sh
-uv run --locked agent-monitoring configure-clients
-uv run --locked agent-monitoring llm-check
+uv run --locked --directory agents/health-check mysql-health-check collect
+uv run --locked --directory agents/audit mysql-audit-security collect
 ```
 
-**Verificação:** `llm-check` faz uma pequena chamada real e deve devolver
-`"status": "ok"`. Ele verifica o login, o modelo e a resposta estruturada;
-consome uma chamada do provedor e não acessa o banco. Para trocar apenas durante
-um teste: `AGENT_MONITORING_LLM_PROVIDER=claude uv run --locked agent-monitoring llm-check`.
+Confira os relatórios e as capacidades disponíveis; uma coleta parcial não
+comprova cobertura completa. O banco precisa ter os schemas, privilégios e
+recursos descritos em [`docs/CONNECTION.md`](docs/CONNECTION.md).
 
-O gerador cria launchers locais com o caminho **deste clone** para Codex, Claude
-Code e Kimi. Cada máquina gera seus próprios launchers. Inicie seu cliente na
-raiz do clone e aprove a confiança do projeto/MCP quando o cliente solicitar.
-[`docs/LLM_CLIENTS.md`](docs/LLM_CLIENTS.md) explica as instruções por papel e as
-diferenças entre os clientes.
-
-## 6. Executar todas as verificações sem banco
-
-```sh
-python3 scripts/check.py
-```
-
-**Verificação:** todas as suítes Python, lint, tipos e build Web devem passar.
-Os testes usam bancos/SMTP simulados. CI executa o mesmo caminho em Linux.
-
-## 7. Configurar e testar e-mail (opcional)
+## 8. Configurar e testar e-mail (opcional)
 
 SMTP é opcional e local a cada clone. Execute `python3 scripts/smtp_setup.py init`,
 preencha host, porta, remetente e destinatários no arquivo criado em
@@ -137,7 +152,7 @@ e-mail real identificado como teste para validar o recebimento. O
 [passo a passo de SMTP](docs/SETUP.md) inclui o formato do helper e a ativação
 no console integrado.
 
-## 8. Ativar o modo integrado
+## 9. Ativar o modo integrado
 
 Com os perfis, TLS, schemas e LLM disponíveis, siga a validação incremental em
 [`docs/SETUP.md`](docs/SETUP.md). Configure o SMTP antes de iniciar o console

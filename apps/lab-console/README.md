@@ -9,7 +9,7 @@ Cockpit web para entender e operar o laboratório sem mover nem reimplementar os
 
 ## Retomar sem o histórico da conversa
 
-Última revisão de continuidade: **24/09/2026**. Este README é o ponto de entrada para o DBA, Codex ou outro desenvolvedor. Não é necessário recuperar o chat para entender o projeto. Código, configuração não secreta e estado atual prevalecem sobre o registro histórico abaixo.
+Última revisão de continuidade: **03/10/2026**. Este README é o ponto de entrada para o DBA, Codex ou outro desenvolvedor. Não é necessário recuperar o chat para entender o projeto. Código, configuração não secreta e estado atual prevalecem sobre o registro histórico abaixo.
 
 1. Leia as instruções da raiz [AGENTS.md](../../AGENTS.md), [MEMORY.md](../../MEMORY.md) e [handoffs](../../docs/handoffs.md), respeitando o escopo do agente que retomar a tarefa.
 2. Leia este arquivo e [OPERACAO.md](docs/OPERACAO.md), [CONTRATOS.md](docs/CONTRATOS.md) e [VALIDACAO.md](docs/VALIDACAO.md).

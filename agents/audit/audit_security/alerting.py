@@ -75,6 +75,8 @@ def build_agent_alert(
     *,
     agent_started_at: datetime,
     detected_at: datetime | None = None,
+    llm_model: str | None = None,
+    llm_provider: str | None = None,
 ) -> dict[str, Any]:
     """Translate one agent decision without re-evaluating its natural-language rule."""
     if report.get("scope", {}).get("functional_schemas") != ["sakila"]:
@@ -96,6 +98,16 @@ def build_agent_alert(
     collection_time = _parse_utc(report["collected_at"])
     detection = max((detected_at or datetime.now(UTC)).astimezone(UTC), collection_time)
     category = decision["category"]
+    metadata = {
+        "decision_owner": "audit-luna",
+        "rule_source": "agents/audit/audit_security/advisor/rules.md",
+        "event_id": row.get("event_id"),
+        "event_key": event_key,
+    }
+    if llm_model is not None:
+        metadata["model"] = llm_model
+    if llm_provider is not None:
+        metadata["provider"] = llm_provider
     alert = {
         "contract_version": "audit_security_alert.v1",
         "alert_id": str(uuid.uuid4()),
@@ -125,13 +137,7 @@ def build_agent_alert(
             "report_generated_at": report["collected_at"],
             "report_format_version": report["schema_version"],
         },
-        "metadata": {
-            "decision_owner": "audit-luna",
-            "model": "gpt-5.6-luna",
-            "rule_source": "agents/audit/audit_security/advisor/rules.md",
-            "event_id": row.get("event_id"),
-            "event_key": event_key,
-        },
+        "metadata": metadata,
     }
     validate_alert(alert)
     return alert

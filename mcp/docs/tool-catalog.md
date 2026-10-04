@@ -18,8 +18,9 @@ para máxima compatibilidade entre clientes MCP; não existe rota REST
 
 ### Quando usar
 
-Use somente depois que uma coleta determinística identificar uma condição
-relevante e produzir os relatórios JSON e HTML completos da mesma coleta.
+Use somente depois que a coleta read-only produzir os relatórios JSON e HTML
+completos, e o advisor com o LLM configurado decidir pelo alerta conforme as
+regras versionadas do agente produtor.
 
 ### Quando não usar
 

@@ -26,7 +26,6 @@ _MCP_ENVIRONMENT_KEYS = frozenset(
         "SMTP_HOST",
         "SMTP_PORT",
         "SMTP_USERNAME",
-        "SMTP_PASSWORD",
         "SMTP_USE_STARTTLS",
         "UV_CACHE_DIR",
     }

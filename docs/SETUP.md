@@ -282,8 +282,11 @@ sem usar `source` no shell.
 
 No **macOS**, use o mesmo usuário do sistema que executará o projeto. Sem
 helper, Notification procura a senha no Chaves com serviço fixo
-`mysqlconf-notification-smtp` e conta igual a `SMTP_USERNAME`. Cadastre-a com
-um prompt interativo; substitua apenas o endereço no comando:
+`mysqlconf-notification-smtp` e conta igual a `SMTP_USERNAME`. Esse nome do
+serviço é um identificador legado preservado para compatibilidade com os
+segredos locais existentes; o projeto, o repositório e o comando MCP usam
+`agent-monitoring`. Cadastre a senha com um prompt interativo; substitua apenas
+o endereço no comando:
 
 ```sh
 security add-generic-password -U -a "SEU_EMAIL_SMTP" -s mysqlconf-notification-smtp -w
