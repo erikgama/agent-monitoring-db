@@ -59,7 +59,7 @@ As versões resolvidas estão nos lockfiles, não nesta tabela. Não atualize de
 
 ## Abrir a demo
 
-Requisitos: Python 3.11+, `uv`, Node.js 22.14+ e npm. Dependências travadas em `uv.lock` e `package-lock.json`.
+Requisitos: Python 3.11+, `uv`, Node.js 22.19+ e npm. Dependências travadas em `uv.lock` e `package-lock.json`.
 
 ```sh
 cd "${AGENT_MONITORING_ROOT}/apps/lab-console/api"
@@ -70,7 +70,7 @@ cd ..
 python3 scripts/dev.py
 ```
 
-Abra **http://localhost:3000**: entrada direta no canvas, sem login. Por autorização explícita do DBA, demo e integrado local usam o operador único `local-dba`, sem senha. Cookie e CSRF continuam ativos; autenticação do runner não mudou. O integrado rejeita origem pública e requisições HTTP não locais. Não exponha esta versão na internet. O script usa SQLite isolado e encerra UI/API com Ctrl-C.
+Abra **http://localhost:3000**: entrada direta no canvas, sem login. Por autorização explícita do DBA, demo e integrado local usam o operador único `local-dba`, sem senha. Cookie e CSRF continuam ativos; autenticação do runner não mudou. O integrado rejeita origem pública e requisições HTTP não locais. O script usa SQLite isolado e encerra UI/API com Ctrl-C.
 
 Com a atividade ao vivo vazia, clique em **Começar demonstração**, confira a explicação e digite `sakila`. Em demo, os três e-mails são simulados. Abra a biblioteca para consultar os três HTMLs fictícios. No chat, experimente “qual é o cooldown?” e, em **Propor ação**, “contar atores”. A aprovação continua em uma segunda etapa, com alvo digitado, mas sem senha.
 
@@ -86,6 +86,25 @@ python3 scripts/dev.py --production
 Use `--runtime /caminho/novo` para uma sessão de demonstração limpa, sem apagar execuções anteriores. Os eventos ficam no SQLite dessa pasta; os HTMLs fictícios são efêmeros e desaparecem ao reiniciar a API.
 
 `--production` significa **servir o build otimizado da Web**, não conectar sozinho ao banco de produção. Sem `--integrated`, `scripts/dev.py` força `LAB_MODE=demo`, remove configurações integradas herdadas e não inicia runner. O atalho operacional local é `python3 scripts/dev.py --production --integrated --allow-execute`: ele liga API, build Web e runner allowlisted em loopback; nenhuma ação de banco começa até o clique e a confirmação `sakila`.
+
+### Demo acessível pela rede
+
+O comando `scripts/dev.py --production` serve a Web apenas em loopback. Para
+uma demo externa, siga o [runbook da demo pública](../../docs/SETUP.md#publicar-somente-a-demo-fictícia):
+inicie a API pela fábrica `labconsole.public_demo:create_public_demo` em
+`127.0.0.1:8000`, configure `LAB_ORIGIN` para a URL externa, faça o build Web
+com `LAB_API_URL=http://127.0.0.1:8000` e sirva a Web com
+`LAB_BIND_HOST=0.0.0.0 PORT=3000`. Abra somente a porta Web na rede aprovada;
+confirme de fora que `/api/health` retorna `mode=demo`. O runbook também cobre
+o runtime separado e o requisito de supervisionar os dois processos. Esse
+endereço público contém somente dados fictícios e não oferece ações MySQL ou
+teste SMTP.
+
+O modo integrado atual continua restrito ao navegador da própria máquina
+confiável. Para acesso remoto com ações reais, seriam necessários identidade
+do operador, autorização por ação, transporte HTTPS, revisão de Host e origem,
+e testes de segurança antes de qualquer publicação. Esse trabalho requer uma
+definição separada de usuários, papéis e política de acesso corporativa.
 
 ### Roteiro de conferência manual da demo
 

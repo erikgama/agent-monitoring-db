@@ -3,6 +3,9 @@
 Execute na raiz do clone. Cada etapa indica o resultado esperado. O caminho
 testado em Linux é Oracle Linux 9; macOS usa os mesmos comandos após instalar os
 pré-requisitos. Windows deve executar este fluxo dentro do WSL2.
+Para ver ou publicar somente a demo fictícia, siga as etapas 1–4; o cliente
+MySQL, o login LLM e o SMTP são necessários apenas para os fluxos reais
+descritos depois.
 
 ## 1. Preparar o sistema
 
@@ -26,9 +29,17 @@ dependências Python serão instaladas pelo `uv`. Ao abrir outra sessão SSH,
 confirme que `uv` continua no `PATH`; se necessário, configure o diretório
 `$HOME/.local/bin` no perfil do seu shell.
 
-Instale também **somente o cliente Oracle MySQL** aprovado pela organização,
-com `mysql` e `mysql_config_editor`. Para Oracle Linux 9, a [documentação
-oficial dos pacotes RPM](https://dev.mysql.com/doc/refman/8.4/en/linux-installation-rpm.html)
+Se o módulo `nodejs:22` não estiver disponível nos repositórios aprovados da
+VM, outra opção verificada em Oracle Linux 9 é extrair o arquivo oficial do
+Node.js 22.19.0 para o diretório do usuário. Escolha o arquivo adequado à
+arquitetura da máquina, confira seu SHA-256 com o `SHASUMS256.txt` publicado
+em [nodejs.org](https://nodejs.org/dist/v22.19.0/) e inclua o diretório `bin`
+no `PATH` de cada sessão ou serviço. Essa instalação não substitui o Node do
+sistema. A versão 22.19.0 é a que foi testada, não uma exigência de fixá-la.
+
+Para as etapas de banco real, instale também **somente o cliente Oracle MySQL**
+aprovado pela organização, com `mysql` e `mysql_config_editor`. Para Oracle
+Linux 9, a [documentação oficial dos pacotes RPM](https://dev.mysql.com/doc/refman/8.4/en/linux-installation-rpm.html)
 descreve os pacotes de cliente e a [documentação do repositório MySQL
 Yum](https://dev.mysql.com/doc/refman/8.4/en/linux-installation-yum-repo.html)
 explica como habilitar a fonte de pacotes. Não é preciso instalar um servidor
@@ -41,18 +52,22 @@ mysql --help | grep -- '--ssl-mode'
 ```
 
 MariaDB CLI não é substituto automático para essas opções.
+Na VM Oracle Linux 9 de validação, `sudo dnf install -y mysql` a partir do
+repositório aprovado `ol9_appstream` forneceu ambos os executáveis e
+`--ssl-mode`. É uma alternativa ao repositório MySQL Yum; confirme a origem e
+a versão permitidas pela sua organização antes de instalar.
 
-No macOS, instale Git, `uv`, Node.js 22 e o cliente MySQL pelo gerenciador de
-pacotes utilizado pela sua organização. No Linux de outras distribuições,
-instale os mesmos pré-requisitos com o gerenciador do sistema.
+No macOS, instale Git, `uv` e Node.js 22 pelo gerenciador de pacotes utilizado
+pela sua organização; acrescente o cliente MySQL para as etapas de banco real.
+No Linux de outras distribuições, use o gerenciador do sistema para os mesmos
+pré-requisitos.
 
 ## 2. Clonar e instalar módulos
 
-O repositório é privado. Antes do clone, conceda à identidade usada nesta
-máquina acesso de leitura no GitHub e configure a autenticação HTTPS no Git
-conforme o método aprovado pela organização. Sem essa etapa, o clone falha
-mesmo que os pré-requisitos locais estejam corretos. Não coloque tokens na URL
-nem copie chaves ou sessões de login de outra máquina.
+O repositório público pode ser clonado por HTTPS sem login no GitHub. Se usar
+um fork privado, conceda acesso de leitura à identidade desta máquina e
+configure a autenticação Git conforme o método aprovado pela organização.
+Não coloque tokens na URL nem copie chaves ou sessões de login de outra máquina.
 
 ```sh
 git clone https://github.com/erikgama/agent-monitoring-db.git
@@ -63,8 +78,8 @@ python3 scripts/bootstrap.py
 Esperado: nove ambientes Python, dependências Web instaladas com `npm ci` e
 configuração central criada. Os lockfiles ficam versionados. Para um servidor
 sem Web, use `--skip-web`. O comando pode ser repetido sem sobrescrever o TOML.
-Se o clone falhar com `Repository not found` ou erro de autenticação, confirme
-o acesso de leitura da conta GitHub e a autenticação HTTPS antes de prosseguir.
+Se um fork privado retornar `Repository not found` ou erro de autenticação,
+confirme o acesso de leitura e a autenticação HTTPS antes de prosseguir.
 
 ## 3. Verificar instalação sem dependências externas
 
@@ -111,21 +126,68 @@ python3 apps/lab-console/scripts/dev.py
 Esperado: Web em `127.0.0.1:3000` e API em `127.0.0.1:8000`. Dados e eventos
 fictícios, sem efeitos externos. `Ctrl-C` encerra os processos.
 
-Para visualizar uma VM pelo computador do operador:
+Para visualizar **somente a demo** de uma VM pelo computador do operador:
 
 ```sh
-ssh -L 3000:127.0.0.1:3000 -L 8000:127.0.0.1:8000 USUARIO@SUA_VM
+ssh -L 3000:127.0.0.1:3000 USUARIO@SUA_VM
 ```
 
 Abra `http://localhost:3000`. Se sua organização usa uma chave SSH, forneça
-seu caminho com `-i`; ela permanece fora do repositório. Não exponha as portas
-do console no firewall: o acesso integrado é restrito a loopback.
+seu caminho com `-i`; ela permanece fora do repositório. Esse túnel é para a
+demo. O integrado atual, que concede papel DBA sem autenticar a pessoa, só
+deve ser usado no navegador da própria máquina confiável; não o exponha nem
+o disponibilize por túnel ou proxy.
 
-Se precisar publicar uma demonstração, use a fábrica de API
-`labconsole.public_demo:create_public_demo`, mantenha a API em loopback e
-publique somente a Web. Essa fábrica bloqueia a navegação pelos arquivos do
-clone; no modo demo, as entregas reais do Refactor ficam indisponíveis. Não
-publique o modo integrado sem uma camada própria de autenticação e isolamento.
+### Publicar somente a demo fictícia
+
+Use esta receita apenas para a fábrica `public_demo`. Ela bloqueia a navegação
+pelos arquivos do clone e não oferece MySQL, runner, MCP ou SMTP reais.
+Qualquer visitante da URL publicada pode iniciar as simulações fictícias, sem
+login. Não use esse endereço para dados ou ações operacionais.
+Conclua o bootstrap antes. Nos exemplos abaixo, substitua `HOST_PUBLICO` pelo
+nome ou IP de entrada aprovado; configure a origem com o mesmo esquema, host e
+porta que o navegador usará. Em um ambiente corporativo, use a política de
+ingresso aprovada e prefira HTTPS em um proxy que publique apenas a Web.
+
+No primeiro terminal, inicie a API isolada em loopback:
+
+```sh
+cd /caminho/agent-monitoring-db/apps/lab-console/api
+LAB_MODE=demo LAB_ORIGIN=http://HOST_PUBLICO:3000 \
+  LAB_RUNTIME="$PWD/../runtime/public-demo" \
+  MCP_NOTIFICATION_ENABLED=false MCP_DBA_ENABLED=false \
+  NOTIFICATION_DELIVERY_ENABLED=false \
+  .venv/bin/uvicorn labconsole.public_demo:create_public_demo \
+  --factory --host 127.0.0.1 --port 8000
+```
+
+No segundo terminal, faça o build com o destino da API já definido e publique
+a Web na porta 3000. `LAB_API_URL` é incorporado ao build; se mudar o destino,
+refaça o build.
+
+```sh
+cd /caminho/agent-monitoring-db/apps/lab-console/web
+LAB_API_URL=http://127.0.0.1:8000 npm run build
+LAB_BIND_HOST=0.0.0.0 PORT=3000 LAB_API_URL=http://127.0.0.1:8000 npm start
+```
+
+Libere apenas `3000/tcp` no firewall local e na regra de entrada da nuvem,
+conforme a política da organização. Mantenha `8000/tcp` fechado para a rede.
+De outro computador, verifique que
+`http://HOST_PUBLICO:3000/api/health` responde `"mode":"demo"` e que
+`/api/resources/` responde 404. Se houver proxy HTTPS, use sua URL externa
+em `LAB_ORIGIN` e nas verificações. Uma resposta HTTP 200 da Web sozinha não
+prova qual modo da API está ativo.
+
+Esses comandos ocupam os terminais e param quando a sessão termina. Para
+operação contínua, instale API e Web em serviços supervisionados pela equipe
+da VM, com diretório de trabalho, `PATH`, ambiente e reinício definidos;
+teste o início e a parada dos dois serviços e repita o check de `mode=demo`
+após reiniciar a VM. Uma tentativa de `systemd-run` executando diretamente
+binários sob `/home/opc` falhou com `203/EXEC` nessa VM: valide um caminho
+executável permitido pelo serviço, sem presumir que o terminal interativo e o
+gerenciador de serviços tenham as mesmas permissões. Consulte também o
+[guia do Lab Console](../apps/lab-console/README.md).
 
 ## 5. Instalar e autenticar o LLM escolhido
 
@@ -300,6 +362,9 @@ identidade do sistema que executará o console. Não escreva a senha no script,
 no arquivo local ou na linha de comando. `check` valida o caminho e a permissão
 de execução; não comprova acesso ao cofre. O contrato completo está no
 [guia Notification](../agents/notification/docs/operations.md).
+Uma chave temporária da sessão do terminal serve para teste, mas não sustenta
+um serviço após reinício. Para entrega contínua, valide a consulta ao cofre
+sob a identidade do serviço e após reiniciar a VM.
 
 ```sh
 python3 scripts/smtp_setup.py check

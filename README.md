@@ -17,6 +17,20 @@ Instalação e testes executados em Oracle Linux 9, a partir de um clone novo:
 [`registro da validação`](docs/VALIDATION_VM.md). Os testes sem banco usam
 fixtures; login LLM, conexão MySQL e entrega SMTP têm verificações próprias.
 
+## Escolha o caminho
+
+| Objetivo | Etapas neste README | O que precisa |
+| --- | --- | --- |
+| Ver a demo no próprio computador | 1–4 | Git, Python, `uv` e Node.js; dados fictícios, sem MySQL, LLM ou SMTP |
+| Publicar a demo para visitantes | 1–4 e [runbook da demo pública](docs/SETUP.md#publicar-somente-a-demo-fictícia) | Os mesmos da demo local, mais um endereço Web e configuração de rede |
+| Monitorar um MySQL real | 1–7 | Cliente MySQL, perfis locais, TLS e login no cliente LLM escolhido |
+| Receber alertas por e-mail | 1–8 | Itens do monitoramento, SMTP e acesso local ao gerenciador de segredos |
+| Usar o console integrado | 1–9 | Itens do monitoramento; acesso apenas no navegador da máquina local confiável |
+
+O repositório é público, mas não traz credenciais nem provisiona o banco.
+Para começar pela demo, pare na etapa 4; as etapas seguintes são independentes
+da publicação da demo.
+
 ### Onde configurar cada acesso
 
 | O que configurar | Onde fica neste clone | Como verificar |
@@ -37,19 +51,21 @@ integrar um cofre de segredos com controle de acesso e rotação. Essa integraç
 para as credenciais MySQL ainda não faz parte do projeto; veja os
 [limites do método atual](docs/CONNECTION.md).
 
-Siga o [guia completo, na ordem](docs/SETUP.md) para preencher e verificar cada
-referência.
+Siga as etapas do [guia de instalação](docs/SETUP.md) correspondentes ao seu
+objetivo para preencher e verificar cada referência.
 
 ## 1. Pré-requisitos
 
-Linux ou macOS (Windows via WSL2), Git, Python para iniciar o bootstrap, `uv`,
-Node.js 22 LTS com npm e cliente **Oracle MySQL** com `mysql_config_editor`.
-O bootstrap instala Python 3.11 com `uv` e ambientes isolados para cada módulo.
+Para a demo: Linux ou macOS (Windows via WSL2), Git, Python para iniciar o
+bootstrap, `uv` e Node.js 22.19+ com npm. O bootstrap instala Python 3.11 com
+`uv` e ambientes isolados para cada módulo. Para monitorar um banco real,
+instale também o cliente **Oracle MySQL** com `mysql_config_editor`.
 
 No Oracle Linux 9, o instalador documentado está em
-[`docs/SETUP.md`](docs/SETUP.md). Instale e autentique pelo menos um cliente LLM:
-Codex, Claude Code ou Kimi **Code**. A conta e os modelos precisam estar
-disponíveis para o próprio usuário que clonou o projeto.
+[`docs/SETUP.md`](docs/SETUP.md). Para o monitoramento real, instale e
+autentique pelo menos um cliente LLM: Codex, Claude Code ou Kimi **Code**. A
+conta e os modelos precisam estar disponíveis para o usuário que clonou o
+projeto.
 
 ## 2. Clonar e instalar
 
@@ -61,7 +77,8 @@ python3 scripts/bootstrap.py
 
 **Verificação:** o comando termina com `Instalação concluída` e cria
 `config/agent-monitoring.toml`. Pode ser repetido; usa os lockfiles e preserva a
-configuração local existente. Um repositório privado exige acesso no GitHub.
+configuração local existente. Este repositório é público; um fork privado
+exige acesso no GitHub.
 
 ## 3. Verificar a instalação sem banco
 
@@ -81,7 +98,9 @@ python3 apps/lab-console/scripts/dev.py
 
 Abra **http://localhost:3000**. Este é o modo demo: dados fictícios, sem MySQL,
 LLM ou SMTP. `Ctrl-C` encerra os processos. Para uma VM, faça um túnel SSH para
-as portas 3000 e 8000 conforme [`docs/SETUP.md`](docs/SETUP.md).
+a porta 3000 conforme [`docs/SETUP.md`](docs/SETUP.md). Para publicar somente
+a demo fictícia, aberta a qualquer visitante sem login, siga o
+[runbook da demo pública](docs/SETUP.md#publicar-somente-a-demo-fictícia).
 
 ## 5. Escolher o LLM e conectar o MCP
 
@@ -160,6 +179,9 @@ se quiser receber e-mails. Primeiro faça uma coleta somente leitura de Health
 Check e Audit; depois inicie o console integrado. Demonstrações que executam
 carga, DML ou DDL exigem tarefa e autorização específicas, conforme `AGENTS.md`;
 não pertencem ao bootstrap nem aos testes de instalação.
+O integrado atual deve ser usado apenas no navegador da máquina local confiável;
+não publique ou faça túnel para essa interface sem implementar autenticação,
+autorização e HTTPS.
 
 ## Estrutura
 

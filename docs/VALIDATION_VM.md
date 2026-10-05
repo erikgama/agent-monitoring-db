@@ -2,7 +2,9 @@
 
 Validação inicial executada em **2 de outubro de 2026**, a partir de um clone do GitHub.
 Código dessa primeira rodada: [`610be18`](https://github.com/erikgama/agent-monitoring-db/commit/610be18).
-O repositório foi publicado como privado; quem clonar precisa de acesso ao GitHub.
+Em 2 de outubro, o repositório era privado e o clone exigia acesso ao GitHub.
+Desde 5 de outubro, o repositório principal é público; o
+[guia de instalação](SETUP.md) descreve o clone atual.
 
 ## Revisão de publicação em 3 de outubro de 2026
 
@@ -117,6 +119,10 @@ Executado em **2 de outubro de 2026**, após autorização explícita do operado
 para ativar Health Check, Audit e Refactor e iniciar a simulação de SELECTs.
 A Web e a API integradas ficaram em loopback na VM, acessadas pelo navegador
 por SSH. O endereço público continua servindo o modo demonstração.
+Esse acesso por túnel pertence ao teste histórico. A regra operacional atual
+do integrado sem identidade de operador é uso no navegador da própria máquina
+confiável, sem túnel, proxy ou publicação de rede; veja o
+[guia do console](../apps/lab-console/README.md#modo-integrado--configuração-e-validação-local).
 
 1. O navegador confirmou **INTEGRADO** e **Runner conectado**. Health Check,
    Audit e Refactor foram ativados, cada um com a confirmação `sakila`.
@@ -304,3 +310,29 @@ as portas 3000 e 8000 deixaram de escutar, a referência ao helper temporário
 foi removida, o arquivo SMTP local manteve `0600` e o clone da VM permaneceu
 limpo em `bfaf13f`. O CI desse commit passou em
 [GitHub Actions](https://github.com/erikgama/agent-monitoring-db/actions/runs/37135653253).
+
+## Revisão de setup em 5 de outubro de 2026
+
+Um teste em outra VM Oracle Linux 9, com snapshot do commit `bb5686b`,
+registrou 323 testes Python aprovados, build Web aprovado, coletas MySQL
+somente leitura e dois envios SMTP aceitos; o operador confirmou o recebimento
+de pelo menos um e-mail. Esses resultados foram informados no relatório local
+da VM e não foram repetidos nesta revisão do repositório. O snapshot não tinha
+`.git`, então não permitia `git pull` ou `git status` naquela máquina.
+
+O guia de instalação foi atualizado para o repositório público e inclui as
+alternativas de Node.js 22 por arquivo oficial e cliente `mysql` do
+`ol9_appstream`. A receita da demo pública agora separa explicitamente a API
+fictícia em loopback da Web exposta e exige conferir `mode=demo` de fora. O
+teste histórico do integrado por SSH acima não muda a regra atual de uso local
+sem túnel.
+
+Nesta revisão, `npm audit` do lockfile Web retornou cinco avisos altos na
+cadeia de desenvolvimento `eslint-config-next` → `@next/eslint-plugin-next` →
+`fast-glob` → `micromatch` → `braces`. `npm audit --omit=dev` retornou zero.
+O [aviso de `braces`](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+informava que não havia versão corrigida em 5 de outubro. O reparo automático
+do npm propunha retroceder `eslint-config-next` da série 16 para 14, por isso
+o lockfile não foi alterado sem uma versão compatível corrigida. A linha de
+auditoria sem vulnerabilidades na tabela acima é o resultado datado da rodada
+anterior, não o estado atual.
